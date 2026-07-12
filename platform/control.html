@@ -79,8 +79,8 @@
 
   <div class="actions">
     <button class="primary" id="b-bet" onclick="placeBet()">
-      <span class="big">▶  Place a bet</span>
-      <span class="small">Full pipeline: fetch markets → model decides → browser places it. No approval needed.</span>
+      <span class="big">🎯  Bet for me</span>
+      <span class="small">I'll pick the best market from live Kalshi odds + your history and place it — no approval needed.</span>
     </button>
     <button id="b-fund" onclick="act('/api/fund?amount=100','POST','Add funds')">
       <span class="big">＋ Add demo funds</span>
@@ -90,14 +90,11 @@
       <span class="big">▤ Check portfolio</span>
       <span class="small">Browser reads open positions</span>
     </button>
-    <button id="b-scrape" onclick="act('/api/kickoff?mode=scrape','POST','Scrape markets')">
-      <span class="big">📈 Scrape markets</span>
-      <span class="small">Browser lists open FIFA markets</span>
-    </button>
-    <button id="b-refresh" onclick="loadStats()">
-      <span class="big">↻ Refresh stats</span>
-      <span class="small">Pull latest bets &amp; P&amp;L</span>
-    </button>
+  </div>
+
+  <div class="log" style="margin-bottom:1.25rem;">
+    <h2>Current bets</h2>
+    <div id="bets"><div class="row"><span class="t">—</span><span>No bets yet. Hit “Bet for me”.</span></div></div>
   </div>
 
   <div class="log">
@@ -179,6 +176,22 @@ async function placeBet() {
   }
 }
 
+function renderBets(bets) {
+  const box = $('bets');
+  if (!bets || !bets.length) {
+    box.innerHTML = '<div class="row"><span class="t">—</span><span>No bets yet. Hit “Bet for me”.</span></div>';
+    return;
+  }
+  const tag = { won:['ok','won'], lost:['err','lost'], pending:['run','open'] };
+  box.innerHTML = bets.map(b => {
+    const t = tag[b.status] || ['warn', b.status];
+    const pl = b.pl == null ? '' : ` · <span class="${b.pl>=0?'':''}">${b.pl>=0?'+':''}$${b.pl.toFixed(2)}</span>`;
+    return `<div class="row"><span class="t">${b.date.slice(5,16)}</span>`
+      + `<span class="tag ${t[0]}">${t[1]}</span>`
+      + `<span><b>${b.direction}</b> · ${b.market} · $${b.amount.toFixed(2)}${pl}</span></div>`;
+  }).join('');
+}
+
 async function loadStats() {
   try {
     const s = await api('/api/stats');
@@ -188,6 +201,7 @@ async function loadStats() {
     pnl.textContent = (s.pnl >= 0 ? '+$' : '-$') + Math.abs(s.pnl).toFixed(2);
     pnl.className = 'v ' + (s.pnl >= 0 ? 'pos' : 'neg');
     $('s-wag').textContent = '$' + s.wagered.toFixed(2);
+    renderBets(s.bets);
   } catch (e) { log('Backend offline — run: python server.py', ['err','offline']); }
 }
 async function loadModel() {

@@ -1,0 +1,57 @@
+╭───────────────────────────── Kalshi FIFA Agent ──────────────────────────────╮
+│ Self-improving two-model pipeline                                            │
+│                                                                              │
+│   Phase 1   Kalshi REST API  →  pure KXWC WC markets                         │
+│   Phase 2A  GRPO Model       →  Qwen2.5-1.5B                                 │
+│   Phase 2B  Holo Validator   →  holo3-1-35b-a3b sanity check                 │
+│   Phase 3   H Company        →  h/web-surfer-flash executes                  │
+│                                                                              │
+│ Target: https://demo.kalshi.co  |  Max bet: $5.00  |  Lessons: 0             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+[Phase 1] Kalshi REST API — fetching pure WC markets...
+  59 WC markets total, 18 sent to model.
+    [match_winner] KXWCGAME-26JUL14FRAESP-TIE | Yes=0.3 | Vol=$54,932
+    [match_winner] KXWCGAME-26JUL14FRAESP-FRA | Yes=0.43 | Vol=$295,885
+    [match_winner] KXWCGAME-26JUL14FRAESP-ESP | Yes=0.3 | Vol=$32,667
+    [both_teams_score] KXWCBTTS-26JUL14FRAESP-BTTS | Yes=0.6 | Vol=$124,968
+    [total_goals] KXWCTOTAL-26JUL14FRAESP-6 | Yes=0.06 | Vol=$6,556
+    [total_goals] KXWCTOTAL-26JUL14FRAESP-5 | Yes=0.14 | Vol=$15,751
+
+[Phase 2A] GRPO policy model (Qwen2.5-1.5B)...
+  [GRPO] Status: fine-tuned
+  [GRPO] Loading Qwen/Qwen2.5-0.5B-Instruct...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:01<08:25,  1.75s/it]Loading weights: 100%|██████████| 290/290 [00:01<00:00, 165.18it/s]
+  [GRPO] Loading fine-tuned LoRA adapter...
+  [GRPO] Ready | fine-tuned | device=cpu
+  [GRPO] → Yes | KXWCGAME-26JUL14FRAESP-TIE | $5.00 | conf=30%
+
+[Phase 2B] Holo model (holo3-1-35b-a3b) — validate / fallback...
+  [Holo] → Yes | KXWCADVANCE-26JUL14FRAESP-FRA | $5.00 | conf=45%
+
+[Decision] source=grpo skip=False
+  → Yes on KXWCGAME-26JUL14FRAESP-TIE
+    [FRA vs ESP] France vs Spain Winner?
+    $5.00 | confidence=30%
+
+[Phase 3] h/web-surfer-flash — placing the bet...
+  [execute] session=d345a9ac-c00c-4c0e-87a5-eebd23a1b82a
+  [execute] watch → https://platform.eu.hcompany.ai/agent-view/d345a9ac-c00c-4c0e-87a5-eebd23a1b82a
+  [execute] done — status=idle
+                  Phase 2 — Holo Model Decision                  
+┌────────────┬──────────────────────────────────────────────────┐
+│ Market     │ [FRA vs ESP] France vs Spain Winner?             │
+│ Direction  │ Yes                                              │
+│ Amount     │ $5.00                                            │
+│ Confidence │ 30%                                              │
+│ Reasoning  │ 选择市场M1，因为它有显著的领先优势和较高的价格。 │
+└────────────┴──────────────────────────────────────────────────┘
+╭──────────────────────────── Phase 3 — Execution ─────────────────────────────╮
+│ Bet placed successfully!                                                     │
+│                                                                              │
+│   Filled price : N/A                                                         │
+│   Order ID     : N/A                                                         │
+│   Local bet ID : 2                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯

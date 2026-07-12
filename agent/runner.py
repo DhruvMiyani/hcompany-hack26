@@ -135,9 +135,11 @@ def run_full_bet_cycle(
     print(f"\n[Phase 3] {EXECUTE_AGENT} — placing the bet...", file=sys.stderr)
     client = _client()
     url, email, password = _kalshi_creds()
+    chosen = next((m for m in markets if m.ticker == final.ticker), None)
     task = execute_bet_task(
         url, email, password,
         final.market, final.direction, final.amount, final.ticker or "",
+        outcome=(chosen.outcome if chosen else "") or "",
     )
     exec_result, exec_sid = _browser_session(client, task, EXECUTE_AGENT, "execute")
     exec_answer = exec_result.answer or ""

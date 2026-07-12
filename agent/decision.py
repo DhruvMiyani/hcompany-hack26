@@ -23,6 +23,7 @@ class Market(BaseModel):
     category: Optional[str] = None   # match_winner, btts, total_goals, …
     match: Optional[str] = None      # "ARG vs SUI"
     last_price: Optional[float] = None  # last traded (tracks market direction)
+    outcome: Optional[str] = None    # yes_sub_title e.g. "Reg Time: Tie"
 
 
 class BetDecision(BaseModel):

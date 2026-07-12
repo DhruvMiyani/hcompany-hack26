@@ -3,332 +3,272 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Betting agent — you're in the loop</title>
+<title>Betting agent — supervised, live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink:#0B0E14; --panel:#111726; --panel-2:#151D30; --line:#242E46; --line-soft:#1B2338;
-  --fg:#E9EDF6; --dim:#8792A6; --faint:#5A6478;
-  --machine:#53D8CB; --machine-bg:rgba(83,216,203,.10); --machine-line:rgba(83,216,203,.35);
-  --human:#F2A65A;  --human-bg:rgba(242,166,90,.10);  --human-line:rgba(242,166,90,.45);
-  --learn:#9B8CFF;  --learn-bg:rgba(155,140,255,.10); --learn-line:rgba(155,140,255,.4);
-  --red:#F07A7A; --green:#7DDE9C;
-  --r:12px; --r-sm:8px;
-  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --paper:#F3F1EA; --paper-2:#FCFBF7; --tint:#ECE9E0;
+  --ink:#15151A; --ink-2:#3C3B40; --dim:#6C6960; --faint:#A6A091;
+  --rule:#E2DDD1; --rule-strong:#D0CABA;
+  --violet:#5B45E0; --violet-2:#7A68F0; --violet-tint:#ECE9FC;
+  --ochre:#A96A12; --ochre-tint:#F6ECD9;
+  --green:#1C7A4C; --green-tint:#E3F1E8;
+  --red:#BF3A2E; --red-tint:#F7E7E3;
+  --r:10px; --r-sm:6px;
+  --display:'Fraunces',Georgia,serif;
   --body:'Instrument Sans',system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
 }
 * { box-sizing:border-box; margin:0; }
 html,body { height:100%; }
-body { background:var(--ink); color:var(--fg); font:15px/1.5 var(--body); }
+body { background:var(--paper); color:var(--ink); font:15px/1.55 var(--body); -webkit-font-smoothing:antialiased; }
 button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
-input,textarea { font:inherit; color:inherit; }
-:focus-visible { outline:2px solid var(--machine); outline-offset:2px; border-radius:4px; }
+input { font:inherit; color:inherit; }
+a { color:inherit; }
+:focus-visible { outline:2px solid var(--violet); outline-offset:2px; border-radius:3px; }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
 
-.app { display:grid; grid-template-columns:238px 1fr; min-height:100vh; }
+.eyebrow { font:500 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--violet); }
+.mono { font-family:var(--mono); font-variant-numeric:tabular-nums; }
 
-/* ── sidebar ─────────────────────────────── */
-.side { border-right:1px solid var(--line-soft); padding:1.25rem 1rem; display:flex; flex-direction:column; gap:.25rem;
-        position:sticky; top:0; height:100vh; }
-.logo { font-family:var(--display); font-weight:700; font-size:1.05rem; letter-spacing:-.01em; padding:.25rem .6rem 1rem;
-        display:flex; align-items:center; gap:.55rem; line-height:1.2; }
-.logo .dot { width:9px; height:9px; border-radius:50%; background:linear-gradient(135deg,var(--machine),var(--human));
-             display:inline-block; flex:0 0 auto; box-shadow:0 0 10px rgba(83,216,203,.5); }
-.logo small { display:block; font:400 11px var(--mono); color:var(--faint); font-weight:400; }
-.nav-btn { display:flex; align-items:center; gap:.65rem; padding:.55rem .6rem; border-radius:var(--r-sm); color:var(--dim);
-           font-weight:500; text-align:left; width:100%; }
-.nav-btn:hover { background:var(--panel); color:var(--fg); }
-.nav-btn.active { background:var(--panel-2); color:var(--fg); }
-.nav-btn .ico { width:18px; text-align:center; opacity:.9; }
-.badge { margin-left:auto; background:var(--human-bg); color:var(--human); border:1px solid var(--human-line);
-         font:500 11px var(--mono); border-radius:999px; padding:.05rem .45rem; }
-.side .spacer { flex:1; }
-.side-status { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); padding:.7rem .8rem; margin-bottom:.6rem; }
-.side-status .row { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--dim); }
-.side-status .row + .row { margin-top:.35rem; }
-.side-status a { color:var(--learn); text-decoration:none; font-weight:500; }
-.side-status a:hover { text-decoration:underline; }
-.user { display:flex; align-items:center; gap:.6rem; padding:.6rem .6rem .2rem; color:var(--dim); font-size:.85rem; }
-.avatar { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#3E4C78,#212A44);
-          display:flex; align-items:center; justify-content:center; font:600 11px var(--mono); color:var(--fg); flex:0 0 auto; }
+/* ── top bar ─────────────────────────────── */
+.topbar { position:sticky; top:0; z-index:40; background:rgba(243,241,234,.85); backdrop-filter:blur(12px);
+          border-bottom:1px solid var(--rule); display:flex; align-items:center; gap:1.5rem; padding:0 2rem; height:64px; }
+.wordmark { font:600 15px var(--mono); letter-spacing:.28em; text-transform:uppercase; display:flex; align-items:center; gap:.6rem; }
+.wordmark .orb { width:11px; height:11px; border-radius:50%;
+                 background:radial-gradient(circle at 35% 30%,var(--violet-2),var(--violet)); box-shadow:0 0 0 3px var(--violet-tint); }
+.topnav { display:flex; gap:.35rem; margin-left:1rem; }
+.topnav button { position:relative; padding:.5rem .3rem; color:var(--dim); font-weight:500; font-size:.92rem; }
+.topnav button:hover { color:var(--ink); }
+.topnav button.active { color:var(--ink); }
+.topnav button.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--violet); }
+.topnav .n-badge { font:500 10px var(--mono); color:var(--ochre); background:var(--ochre-tint); border-radius:999px; padding:.02rem .35rem; margin-left:.3rem; vertical-align:1px; }
+.top-right { margin-left:auto; display:flex; align-items:center; gap:1rem; }
+.status-chip { display:flex; align-items:center; gap:.45rem; font:500 12px var(--mono); color:var(--dim); }
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.top-link { font-size:.85rem; color:var(--violet); font-weight:500; text-decoration:none; }
+.top-link:hover { text-decoration:underline; }
 
-/* ── main ────────────────────────────────── */
-main { padding:2rem 2.25rem 3rem; max-width:1180px; width:100%; }
-.eyebrow { font:500 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:.4rem; }
-h1 { font-family:var(--display); font-weight:600; font-size:1.6rem; letter-spacing:-.02em; }
-.lede { color:var(--dim); margin-top:.35rem; max-width:60ch; }
-.lede b { color:var(--human); font-weight:600; }
-.lede .ok { color:var(--machine); font-weight:600; }
-.section-title { font-family:var(--display); font-weight:600; font-size:1.05rem; margin:1.75rem 0 .8rem; display:flex; align-items:center; gap:.55rem; }
+/* ── layout ──────────────────────────────── */
+main { max-width:1200px; margin:0 auto; padding:2.75rem 2rem 4rem; }
+.view[hidden] { display:none; }
 
-/* ── head bar ────────────────────────────── */
-.headbar { display:flex; align-items:center; gap:.9rem; flex-wrap:wrap; }
-.headbar .glyph { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
-                  font-size:1.4rem; background:var(--panel-2); border:1px solid var(--line-soft); }
-.pill { font:500 11px var(--mono); padding:.15rem .55rem; border-radius:999px; white-space:nowrap; }
-.pill.run   { color:var(--machine); background:var(--machine-bg); border:1px solid var(--machine-line); }
-.pill.wait  { color:var(--human);   background:var(--human-bg);   border:1px solid var(--human-line); }
-.pill.train { color:var(--learn);   background:var(--learn-bg);   border:1px solid var(--learn-line); }
-.head-actions { margin-left:auto; display:flex; gap:.5rem; }
-.ghost-btn { padding:.45rem .85rem; border:1px solid var(--line); border-radius:var(--r-sm); color:var(--dim); font-size:.85rem; font-weight:500; }
-.ghost-btn:hover { color:var(--fg); border-color:var(--dim); }
+/* ── hero / section header ───────────────── */
+.hero { position:relative; padding-bottom:1.75rem; margin-bottom:2rem; border-bottom:1px solid var(--rule); }
+.hero .kicker { display:flex; align-items:center; gap:.6rem; margin-bottom:1rem; }
+.state-tag { font:500 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; padding:.18rem .55rem; border-radius:999px; }
+.state-tag.wait { color:var(--ochre); background:var(--ochre-tint); }
+.state-tag.run  { color:var(--green); background:var(--green-tint); }
+.state-tag.off  { color:var(--dim); background:var(--tint); }
+h1 { font-family:var(--display); font-weight:500; font-size:clamp(2.2rem,5vw,3.4rem); line-height:1.02; letter-spacing:-.02em;
+     font-optical-sizing:auto; max-width:16ch; }
+h1 em { font-style:italic; color:var(--violet); }
+.lede { color:var(--dim); margin-top:1.1rem; max-width:56ch; font-size:1.02rem; }
+.hero-actions { position:absolute; right:0; top:0; display:flex; gap:.5rem; }
+.btn { padding:.5rem .9rem; border:1px solid var(--rule-strong); border-radius:var(--r-sm); font-size:.85rem; font-weight:500; color:var(--ink-2);
+       background:var(--paper-2); transition:border-color .15s; }
+.btn:hover { border-color:var(--dim); }
+.btn.primary { background:var(--violet); border-color:var(--violet); color:#fff; }
+.btn.primary:hover { background:var(--violet-2); }
+.ghost-num { position:absolute; right:-.5rem; top:-2.5rem; font-family:var(--display); font-weight:500; font-size:11rem;
+             line-height:1; color:var(--ink); opacity:.035; pointer-events:none; user-select:none; }
 
-/* ── policy ribbon ───────────────────────── */
-.policy-ribbon { margin-top:1.25rem; background:var(--learn-bg); border:1px solid var(--learn-line); border-radius:var(--r);
-                 padding:.8rem 1.1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; font-size:.88rem; }
-.policy-ribbon .v { font-family:var(--mono); color:var(--learn); font-weight:500; }
-.policy-ribbon .track { flex:1 1 140px; height:6px; background:rgba(155,140,255,.15); border-radius:3px; overflow:hidden; min-width:120px; }
-.policy-ribbon .fill { width:60%; height:100%; background:var(--learn); border-radius:3px; }
-.policy-ribbon .note { color:var(--dim); }
+/* ── policy line ─────────────────────────── */
+.policy { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:.9rem 1.1rem; margin-bottom:1.75rem;
+          border:1px solid var(--rule); border-left:3px solid var(--violet); border-radius:var(--r); background:var(--paper-2); font-size:.9rem; }
+.policy .v { font:500 13px var(--mono); color:var(--violet); }
+.policy .track { flex:1 1 160px; min-width:140px; height:5px; border-radius:3px; background:var(--violet-tint); overflow:hidden; }
+.policy .fill { width:28%; height:100%; background:var(--violet); border-radius:3px; }
+.policy .note { color:var(--dim); }
 
-/* ── telemetry ───────────────────────────── */
-.telemetry { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin-top:1rem; }
-.tele { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); padding:.8rem .95rem; }
-.tele .label { color:var(--faint); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; }
-.tele .value { font:500 1.35rem var(--mono); margin-top:.15rem; }
-.tele .value small { font-size:.75rem; color:var(--dim); }
-.tele .value.pos { color:var(--green); }
-.tele .value.neg { color:var(--red); }
-.tele .sub { color:var(--dim); font-size:.75rem; margin-top:.1rem; }
+/* ── stat strip ──────────────────────────── */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); border:1px solid var(--rule);
+         border-radius:var(--r); overflow:hidden; background:var(--paper-2); margin-bottom:2.25rem; }
+.stat { padding:1.1rem 1.2rem; border-right:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+.stat .l { font:500 10.5px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+.stat .n { font-family:var(--display); font-weight:500; font-size:1.9rem; line-height:1.1; margin-top:.35rem; letter-spacing:-.01em; }
+.stat .n.pos { color:var(--green); } .stat .n.neg { color:var(--red); } .stat .n.vio { color:var(--violet); }
+.stat .n small { font-size:.9rem; color:var(--dim); font-family:var(--body); }
+.stat .s { font-size:.78rem; color:var(--dim); margin-top:.25rem; }
 
-/* ── workspace ───────────────────────────── */
-.workspace { display:grid; grid-template-columns:1.1fr .9fr; gap:1rem; margin-top:1rem; align-items:start; }
-.panel { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); display:flex; flex-direction:column; }
-.panel-head { padding:.8rem 1.1rem; border-bottom:1px solid var(--line-soft); display:flex; align-items:center; gap:.6rem;
-              font-family:var(--display); font-weight:600; font-size:.95rem; }
-.panel-head .meta { margin-left:auto; font:400 11px var(--mono); color:var(--faint); }
-.live-dot { width:7px; height:7px; border-radius:50%; background:var(--machine); animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+/* ── section heading ─────────────────────── */
+.sec-head { display:flex; align-items:baseline; gap:.8rem; margin:0 0 1rem; }
+.sec-head h2 { font-family:var(--display); font-weight:500; font-size:1.35rem; letter-spacing:-.01em; }
+.sec-head .idx { font:500 12px var(--mono); color:var(--faint); }
 
-/* ── live feed ───────────────────────────── */
-.feed { list-style:none; padding:.6rem 0; max-height:440px; overflow-y:auto; }
-.feed li { display:flex; gap:.8rem; padding:.5rem 1.1rem; font-size:.86rem; animation:slide-in .35s ease; }
-@keyframes slide-in { from { opacity:0; transform:translateY(-4px);} to { opacity:1; transform:none;} }
-.feed .t { font:400 11px var(--mono); color:var(--faint); padding-top:.2rem; flex:0 0 44px; }
-.feed .what { color:var(--dim); }
-.feed .what b { color:var(--fg); font-weight:500; }
-.feed li.you .what b { color:var(--human); }
-.feed li.reward .what b { color:var(--learn); }
-.feed li.win .what b { color:var(--green); }
-.feed li.loss .what b { color:var(--red); }
+/* ── two-column workspace ────────────────── */
+.work { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; align-items:start; }
+.card { background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r); display:flex; flex-direction:column; overflow:hidden; }
+.card-h { display:flex; align-items:center; gap:.55rem; padding:.85rem 1.15rem; border-bottom:1px solid var(--rule);
+          font-family:var(--display); font-weight:500; font-size:1.02rem; }
+.card-h .tail { margin-left:auto; font:400 11px var(--mono); color:var(--faint); }
 
-/* ── chat / human-in-the-loop ────────────── */
-.chat { display:flex; flex-direction:column; max-height:600px; }
-.chat-scroll { flex:1; overflow-y:auto; padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.85rem; }
-.msg { max-width:88%; padding:.6rem .85rem; border-radius:var(--r); font-size:.89rem; line-height:1.45; }
-.msg.agent { background:var(--panel-2); border:1px solid var(--line-soft); align-self:flex-start; }
-.msg.me { background:#26314F; align-self:flex-end; }
-.msg .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:block; margin-bottom:.25rem; }
+/* ── live stream ─────────────────────────── */
+.stream { list-style:none; max-height:460px; overflow-y:auto; }
+.stream li { display:flex; gap:.9rem; padding:.7rem 1.15rem; border-bottom:1px solid var(--rule); font-size:.88rem; animation:slidein .35s ease; }
+.stream li:last-child { border-bottom:none; }
+@keyframes slidein { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.stream .t { font:400 11px var(--mono); color:var(--faint); flex:0 0 42px; padding-top:.15rem; }
+.stream .x { color:var(--dim); }
+.stream .x b { color:var(--ink); font-weight:500; }
+.stream .x .arw { color:var(--faint); margin-right:.1rem; }
+.stream li.win .x b { color:var(--green); }
+.stream li.loss .x b { color:var(--red); }
+.stream li.reward .x b { color:var(--violet); }
+.stream li.you { background:var(--ochre-tint); }
+.stream li.you .x b { color:var(--ochre); }
 
-.handoff { align-self:stretch; max-width:100%; background:var(--human-bg); border:1px solid var(--human-line); border-radius:var(--r);
-           padding:.85rem 1rem; animation:glow 2.6s ease-in-out infinite; }
-@keyframes glow { 0%,100% { box-shadow:0 0 0 0 rgba(242,166,90,0);} 50% { box-shadow:0 0 18px 0 rgba(242,166,90,.12);} }
-.handoff .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--human); display:block; margin-bottom:.3rem; }
-.handoff h4 { font-family:var(--display); font-size:1rem; font-weight:600; margin-bottom:.25rem; }
-.handoff p { color:var(--dim); font-size:.85rem; }
-.ticket { font-family:var(--mono); font-size:.8rem; background:rgba(0,0,0,.28); border-radius:var(--r-sm); padding:.6rem .75rem; margin:.6rem 0;
-          display:grid; grid-template-columns:auto 1fr; gap:.25rem 1rem; }
-.ticket .k { color:var(--faint); }
-.ticket .val { color:var(--fg); text-align:right; }
-.ticket .val.side { color:var(--machine); font-weight:500; }
-.handoff .actions { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
-.approve { background:var(--human); color:#1A1104; font-weight:600; padding:.45rem .9rem; border-radius:var(--r-sm); }
-.approve:hover { opacity:.9; }
-.reject { border:1px solid var(--human-line); color:var(--human); padding:.45rem .9rem; border-radius:var(--r-sm); font-weight:500; }
-.reject:hover { background:rgba(242,166,90,.08); }
-.tweak { color:var(--dim); font-size:.8rem; text-decoration:underline; text-underline-offset:2px; }
-.tweak:hover { color:var(--fg); }
-.handoff.decided { animation:none; opacity:.75; }
-.handoff .verdict { font-size:.85rem; font-weight:600; }
-.handoff .verdict.ok { color:var(--green); }
-.handoff .verdict.no { color:var(--red); }
+/* ── chat thread ─────────────────────────── */
+.thread { display:flex; flex-direction:column; max-height:620px; }
+.thread-scroll { flex:1; overflow-y:auto; padding:1.15rem; display:flex; flex-direction:column; gap:1rem; }
+.bubble { max-width:86%; font-size:.9rem; line-height:1.5; }
+.bubble .who { font:500 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--faint); display:block; margin-bottom:.3rem; }
+.bubble.agent { align-self:flex-start; }
+.bubble.agent .body { background:var(--tint); border:1px solid var(--rule); border-radius:2px 12px 12px 12px; padding:.65rem .9rem; }
+.bubble.me { align-self:flex-end; text-align:right; }
+.bubble.me .body { background:var(--violet); color:#fff; border-radius:12px 2px 12px 12px; padding:.65rem .9rem; display:inline-block; text-align:left; }
 
-.chat-input { display:flex; gap:.5rem; padding:.8rem; border-top:1px solid var(--line-soft); }
-.chat-input input { flex:1; background:var(--panel-2); border:1px solid var(--line-soft); border-radius:var(--r-sm);
-                    padding:.55rem .8rem; color:var(--fg); }
+/* ── approval card (the human-in-the-loop moment) ── */
+.approval { align-self:stretch; border:1px solid var(--ochre); border-radius:var(--r); overflow:hidden; background:var(--paper-2);
+            box-shadow:0 1px 0 var(--ochre-tint); animation:breathe 3s ease-in-out infinite; }
+@keyframes breathe { 0%,100%{box-shadow:0 0 0 0 rgba(169,106,18,0)} 50%{box-shadow:0 0 0 4px rgba(169,106,18,.06)} }
+.approval.decided { animation:none; }
+.approval .ap-top { padding:.85rem 1rem .2rem; }
+.approval .ap-eyebrow { font:500 10px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ochre); }
+.approval h4 { font-family:var(--display); font-weight:600; font-size:1.15rem; margin-top:.3rem; letter-spacing:-.01em; }
+.approval .ap-sub { color:var(--dim); font-size:.82rem; margin-top:.1rem; }
+.ticket { display:grid; grid-template-columns:auto 1fr; gap:.4rem 1rem; padding:.75rem 1rem; margin:.7rem 0 0; border-top:1px solid var(--rule);
+          font:500 12.5px var(--mono); }
+.ticket dt { color:var(--faint); font-weight:400; }
+.ticket dd { text-align:right; color:var(--ink); }
+.ticket dd.side { color:var(--violet); }
+.ticket dd.pos { color:var(--green); }
+.ap-actions { display:flex; align-items:center; gap:.55rem; padding:.85rem 1rem; border-top:1px solid var(--rule); background:var(--tint); }
+.ap-approve { background:var(--ochre); color:#fff; font-weight:600; padding:.5rem 1rem; border-radius:var(--r-sm); font-size:.88rem; }
+.ap-approve:hover { filter:brightness(1.08); }
+.ap-skip { border:1px solid var(--rule-strong); color:var(--ink-2); padding:.5rem 1rem; border-radius:var(--r-sm); font-weight:500; font-size:.88rem; }
+.ap-skip:hover { border-color:var(--dim); }
+.ap-adjust { margin-left:auto; color:var(--dim); font-size:.82rem; text-decoration:underline; text-underline-offset:2px; }
+.ap-adjust:hover { color:var(--ink); }
+.verdict { padding:.85rem 1rem; border-top:1px solid var(--rule); font-size:.88rem; font-weight:600; }
+.verdict.ok { color:var(--green); background:var(--green-tint); }
+.verdict.no { color:var(--red); background:var(--red-tint); }
+
+.chat-input { display:flex; gap:.55rem; padding:.8rem; border-top:1px solid var(--rule); }
+.chat-input input { flex:1; background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--r-sm); padding:.6rem .8rem; }
 .chat-input input::placeholder { color:var(--faint); }
-.send { background:var(--machine); color:#04211E; font-weight:600; padding:.5rem .95rem; border-radius:var(--r-sm); }
-.send:hover { opacity:.9; }
+.chat-input .send { background:var(--ink); color:var(--paper); font-weight:600; padding:.55rem 1rem; border-radius:var(--r-sm); font-size:.88rem; }
+.chat-input .send:hover { opacity:.88; }
 
-/* ── tables (positions / markets) ────────── */
-.tablewrap { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); overflow:hidden; margin-top:.8rem; }
-table { width:100%; border-collapse:collapse; font-size:.87rem; }
-th { text-align:left; font:500 11px var(--mono); text-transform:uppercase; letter-spacing:.06em; color:var(--faint);
-     padding:.7rem 1rem; border-bottom:1px solid var(--line-soft); }
-th.num, td.num { text-align:right; font-family:var(--mono); }
-td { padding:.7rem 1rem; border-bottom:1px solid var(--line-soft); color:var(--dim); }
-tr:last-child td { border-bottom:none; }
-tbody tr:hover { background:var(--panel-2); }
-td .mkt { color:var(--fg); font-weight:500; }
+/* ── data sheet (markets / positions) ────── */
+.sheet { border:1px solid var(--rule); border-radius:var(--r); overflow:hidden; background:var(--paper-2); }
+.sheet .scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.9rem; }
+th { text-align:left; font:500 10.5px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--faint);
+     padding:.85rem 1.1rem; border-bottom:1px solid var(--rule); white-space:nowrap; }
+th.num, td.num { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+td { padding:.85rem 1.1rem; border-bottom:1px solid var(--rule); color:var(--dim); }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:var(--tint); }
+td .mkt { color:var(--ink); font-weight:500; font-family:var(--display); font-size:1.02rem; }
 td .sub { color:var(--faint); font-size:.78rem; }
-.tag { font:500 10px var(--mono); padding:.1rem .45rem; border-radius:999px; }
-.tag.yes { color:var(--machine); background:var(--machine-bg); border:1px solid var(--machine-line); }
-.tag.no  { color:var(--human);   background:var(--human-bg);   border:1px solid var(--human-line); }
+.tag { font:500 10px var(--mono); padding:.12rem .5rem; border-radius:999px; }
+.tag.yes { color:var(--violet); background:var(--violet-tint); }
+.tag.no  { color:var(--ochre); background:var(--ochre-tint); }
 .pos { color:var(--green); } .neg { color:var(--red); }
-.conf-bar { display:inline-block; width:54px; height:6px; border-radius:3px; background:rgba(155,140,255,.18); vertical-align:middle; overflow:hidden; }
-.conf-bar i { display:block; height:100%; background:var(--learn); }
-
-/* ── markets recommendation cards ────────── */
-.rec-actions { display:flex; gap:.4rem; }
-.mini { font:500 12px var(--body); padding:.3rem .6rem; border-radius:6px; border:1px solid var(--line); color:var(--dim); }
-.mini.go { background:var(--human); color:#1A1104; border-color:var(--human); font-weight:600; }
-.mini:hover { border-color:var(--dim); }
-.mini.go:hover { opacity:.9; }
+.conf { display:inline-flex; align-items:center; gap:.45rem; }
+.conf .bar { width:52px; height:5px; border-radius:3px; background:var(--violet-tint); overflow:hidden; }
+.conf .bar i { display:block; height:100%; background:var(--violet); }
+.conf .pct { font:500 12px var(--mono); color:var(--dim); }
+.row-act { font:500 12px var(--body); padding:.32rem .6rem; border-radius:var(--r-sm); border:1px solid var(--rule-strong); color:var(--ink-2); }
+.row-act:hover { border-color:var(--dim); }
+.row-act.go { background:var(--ochre); border-color:var(--ochre); color:#fff; font-weight:600; }
+.row-act.go:hover { filter:brightness(1.08); }
 
 /* ── toasts ──────────────────────────────── */
-#toasts { position:fixed; bottom:1.25rem; right:1.25rem; display:flex; flex-direction:column; gap:.5rem; z-index:50; }
-.toast { background:var(--panel-2); border:1px solid var(--line); border-left:3px solid var(--machine); border-radius:var(--r-sm);
-         padding:.65rem .95rem; font-size:.87rem; min-width:260px; max-width:340px; box-shadow:0 8px 24px rgba(0,0,0,.45);
-         animation:slide-in .3s ease; }
-.toast.human { border-left-color:var(--human); }
-.toast.learn { border-left-color:var(--learn); }
+#toasts { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; flex-direction:column; gap:.55rem; z-index:60; }
+.toast { background:var(--paper-2); border:1px solid var(--rule); border-left:3px solid var(--violet); border-radius:var(--r-sm);
+         padding:.7rem 1rem; font-size:.87rem; min-width:270px; max-width:350px; box-shadow:0 12px 32px rgba(30,26,15,.14);
+         animation:slidein .3s ease; color:var(--ink-2); }
+.toast.human { border-left-color:var(--ochre); }
 .toast.win { border-left-color:var(--green); }
-.toast .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:block; }
+.toast.learn { border-left-color:var(--violet); }
+.toast .who { font:500 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--faint); display:block; margin-bottom:.1rem; }
 
 /* ── responsive ──────────────────────────── */
-@media (max-width:900px) {
-  .app { grid-template-columns:1fr; }
-  .side { position:static; height:auto; flex-direction:row; align-items:center; border-right:none;
-          border-bottom:1px solid var(--line-soft); padding:.6rem 1rem; gap:.35rem; overflow-x:auto; }
-  .side .spacer,.user,.side-status { display:none; }
-  .logo { padding:0 .5rem 0 0; }
-  .logo small { display:none; }
-  .nav-btn { width:auto; white-space:nowrap; }
-  main { padding:1.25rem 1rem 2.5rem; }
-  .workspace { grid-template-columns:1fr; }
-  .tablewrap { overflow-x:auto; }
+@media (max-width:880px) {
+  .topbar { padding:0 1rem; gap:.75rem; overflow-x:auto; }
+  .topnav { margin-left:0; }
+  .top-right .status-chip { display:none; }
+  main { padding:2rem 1rem 3rem; }
+  .hero-actions { position:static; margin-top:1.25rem; }
+  .ghost-num { display:none; }
+  .work { grid-template-columns:1fr; }
 }
 </style>
 </head>
 <body>
-<div class="app">
 
-<aside class="side">
-  <div class="logo"><span class="dot"></span><span>Betting agent<small>demo.kalshi.co</small></span></div>
-  <button class="nav-btn active" data-view="deck"><span class="ico">◧</span>Command center</button>
-  <button class="nav-btn" data-view="markets"><span class="ico">📈</span>Markets <span class="badge" id="nav-badge">2</span></button>
-  <button class="nav-btn" data-view="positions"><span class="ico">▤</span>Positions</button>
-  <button class="nav-btn" onclick="toast('learn','Model','Trajectory explorer opens once GRPO finishes. Watch it live on port 8787.')"><span class="ico">↺</span>Trajectories</button>
-  <div class="spacer"></div>
-  <div class="side-status">
-    <div class="row"><span class="live-dot"></span>Agent running</div>
-    <div class="row" style="color:var(--learn)">◆ Policy v2 training</div>
-    <div class="row"><a href="http://localhost:8787" target="_blank">Live GRPO dashboard →</a></div>
+<header class="topbar">
+  <div class="wordmark"><span class="orb"></span>Betting&nbsp;Agent</div>
+  <nav class="topnav">
+    <button class="active" data-view="command">Command</button>
+    <button data-view="markets">Markets</button>
+    <button data-view="positions">Positions</button>
+    <button onclick="toast('learn','Model','Trajectory explorer opens once GRPO finishes. Watch it live on port 8787.')">Model</button>
+  </nav>
+  <div class="top-right">
+    <span class="status-chip"><span class="live-dot"></span><span id="conn-chip">connecting…</span></span>
+    <a class="top-link" href="http://localhost:8787/">GRPO training dashboard →</a>
   </div>
-  <div class="user"><span class="avatar">DM</span> Account</div>
-</aside>
+</header>
 
 <main>
 
-<!-- ═══ COMMAND CENTER ═══ -->
-<section id="view-deck">
-  <div class="headbar">
-    <span class="glyph">⚽</span>
-    <div>
-      <h1>FIFA World Cup betting agent</h1>
-      <div style="color:var(--faint); font-size:.85rem;">Prediction markets · demo.kalshi.co · asks before every bet over $2</div>
+<!-- ═══ COMMAND ═══ -->
+<section class="view" id="view-command">
+  <div class="hero">
+    <span class="ghost-num">01</span>
+    <div class="kicker">
+      <span class="eyebrow">Live · Supervised</span>
+      <span class="state-tag off" id="state-tag">Connecting…</span>
     </div>
-    <span class="pill wait" id="agent-pill">needs you</span>
-    <div class="head-actions">
-      <button class="ghost-btn" id="fund-btn" onclick="addFunds()">＋ Add demo funds</button>
-      <button class="ghost-btn" id="bet-btn" onclick="runBet()">Run bet pipeline</button>
-      <button class="ghost-btn" id="pause-btn" onclick="togglePause()">Pause agent</button>
-      <button class="ghost-btn" onclick="toast('','Settings','Bet limits, autonomy and notifications are mock-only in this preview.')">Settings</button>
+    <h1>Watch it bet.<br>Step in <em>anytime.</em></h1>
+    <p class="lede">A self-improving FIFA World Cup betting agent trading demo markets on Kalshi. It runs on its own, learns from every settled bet through GRPO, and hands the decision to you whenever a bet crosses your limit.</p>
+    <div class="hero-actions">
+      <button class="btn" id="fund-btn" onclick="addFunds()">＋ Add funds</button>
+      <button class="btn primary" id="bet-btn" onclick="betForMe()">🎯 Bet for me</button>
     </div>
   </div>
 
-  <div class="policy-ribbon">
-    <span class="v">policy v1</span>
-    <div class="track"><div class="fill"></div></div>
-    <span class="v">v2 · GRPO step 11/40</span>
-    <span class="note">Every bet you approve or reject becomes a reward-labelled trajectory for the next policy.</span>
+  <div class="policy">
+    <span class="v" id="pol-badge">checking policy…</span>
+    <div class="track"><div class="fill" id="pol-fill" style="width:0%"></div></div>
+    <span class="v" id="pol-model"></span>
+    <span class="note">Every settled bet becomes a reward-labelled trajectory for the next GRPO policy.</span>
   </div>
 
-  <div class="telemetry">
-    <div class="tele"><div class="label">Bankroll</div><div class="value">$248.50</div><div class="sub">demo · started $250</div></div>
-    <div class="tele"><div class="label">Today's P&amp;L</div><div class="value pos" id="tele-pnl">+$6.20</div><div class="sub">across 8 settled bets</div></div>
-    <div class="tele"><div class="label">Win rate</div><div class="value">63<small>%</small></div><div class="sub">last 40 bets</div></div>
-    <div class="tele"><div class="label">Open exposure</div><div class="value">$14.00</div><div class="sub">4 open positions</div></div>
-    <div class="tele"><div class="label">Avg reward</div><div class="value" style="color:var(--learn)">+0.31</div><div class="sub">GRPO signal</div></div>
+  <div class="stats">
+    <div class="stat"><div class="l">Bets placed</div><div class="n" id="st-bets">–</div><div class="s">all time · demo</div></div>
+    <div class="stat"><div class="l">Record</div><div class="n" id="st-rec">–</div><div class="s">wins – losses</div></div>
+    <div class="stat"><div class="l">Win rate</div><div class="n" id="st-wr">–</div><div class="s">settled bets</div></div>
+    <div class="stat"><div class="l">Wagered</div><div class="n" id="st-wag">–</div><div class="s">total staked</div></div>
+    <div class="stat"><div class="l">Net P&amp;L</div><div class="n" id="st-pnl">–</div><div class="s">settled bets</div></div>
   </div>
 
-  <div class="workspace">
-    <div class="panel">
-      <div class="panel-head"><span class="live-dot"></span>Live activity<span class="meta">demo.kalshi.co</span></div>
-      <ul class="feed" id="feed">
-        <li><span class="t">18:41</span><span class="what">Fetched <b>102 KXWC</b> World Cup markets from Kalshi</span></li>
-        <li><span class="t">18:42</span><span class="what">Filtered to <b>37 liquid</b> markets (volume &gt; $500)</span></li>
-        <li><span class="t">18:44</span><span class="what">Model sampled 4 bets on <b>Brazil to win</b> → picked YES</span></li>
-        <li><span class="t">18:45</span><span class="what">Holo validator <b>confirmed</b> edge vs implied odds</span></li>
-        <li class="win"><span class="t">18:46</span><span class="what"><b>Won +$1.80</b> — Argentina ML settled YES</span></li>
-        <li class="reward"><span class="t">18:46</span><span class="what"><b>Reward +0.6</b> — sizing matched Kelly optimum</span></li>
-        <li class="you"><span class="t">18:52</span><span class="what"><b>Waiting on you</b> — bet exceeds $2 auto-limit</span></li>
-      </ul>
+  <div class="work">
+    <div class="card">
+      <div class="card-h"><span class="live-dot"></span>Live activity<span class="tail">demo.kalshi.co</span></div>
+      <ul class="stream" id="stream"></ul>
     </div>
 
-    <div class="panel chat">
-      <div class="panel-head">Chat with your agent</div>
-      <div class="chat-scroll" id="chat">
-        <div class="msg agent"><span class="who">Agent</span>Heads up — the demo account is out of cash (<b>$0.01</b> available), so I can't place any bet you approve until it's funded. Want me to top up the demo balance? I'll drive the browser to do it, with you watching.</div>
-
-        <div class="handoff" id="handoff-fund">
-          <span class="who">Approve top-up</span>
-          <h4>Add demo funds</h4>
-          <p>demo.kalshi.co · play money · needed before any bet can fill</p>
-          <div class="ticket">
-            <span class="k">Available now</span><span class="val">$0.01</span>
-            <span class="k">Top up to</span><span class="val">$100.00</span>
-            <span class="k">Method</span><span class="val">browser agent (web-surfer)</span>
-            <span class="k">You watch</span><span class="val pos">live session</span>
-          </div>
-          <div class="actions">
-            <button class="approve" onclick="approveFunds()">Approve &amp; add $100</button>
-            <button class="reject" onclick="decide('handoff-fund', false, 'demo top-up')">Not now</button>
-          </div>
-        </div>
-
-        <div class="msg agent"><span class="who">Agent</span>I found an edge on the France–Brazil semifinal. Market implies France at 47¢ but my policy puts fair value at 58¢ after adjusting for Brazil's missing striker. I'd like to bet YES on France.</div>
-        <div class="msg me"><span class="who">You</span>How confident, and how big?</div>
-        <div class="msg agent"><span class="who">Agent</span>Confidence 71%. Kelly says $4.20, I'd cap it at $3.50 to stay under 2% of bankroll. It's over the $2 auto-limit, so it's your call:</div>
-
-        <div class="handoff" id="handoff-1">
-          <span class="who">Approve this bet</span>
-          <h4>France to win — YES</h4>
-          <p>KXWC-26-FRA · France vs Brazil, semifinal</p>
-          <div class="ticket">
-            <span class="k">Side</span><span class="val side">YES @ 47¢</span>
-            <span class="k">Stake</span><span class="val">$3.50</span>
-            <span class="k">Fair value</span><span class="val">58¢ (+11¢ edge)</span>
-            <span class="k">To win</span><span class="val pos">+$3.95</span>
-            <span class="k">Confidence</span><span class="val">71%</span>
-          </div>
-          <div class="actions">
-            <button class="approve" onclick="decide('handoff-1', true, 'France to win — YES · $3.50')">Approve &amp; place bet</button>
-            <button class="reject" onclick="decide('handoff-1', false, 'France to win — YES')">Skip</button>
-            <button class="tweak" onclick="toast('','Bet ticket','Stake editor is mock-only in this preview.')">Adjust stake</button>
-          </div>
-        </div>
-
-        <div class="handoff" id="handoff-2">
-          <span class="who">Approve this bet</span>
-          <h4>Total goals over 2.5 — YES</h4>
-          <p>KXWC-26-ARGNED · Argentina vs Netherlands, quarterfinal</p>
-          <div class="ticket">
-            <span class="k">Side</span><span class="val side">YES @ 61¢</span>
-            <span class="k">Stake</span><span class="val">$2.50</span>
-            <span class="k">Fair value</span><span class="val">66¢ (+5¢ edge)</span>
-            <span class="k">To win</span><span class="val pos">+$1.60</span>
-            <span class="k">Confidence</span><span class="val">64%</span>
-          </div>
-          <div class="actions">
-            <button class="approve" onclick="decide('handoff-2', true, 'Over 2.5 goals — YES · $2.50')">Approve &amp; place bet</button>
-            <button class="reject" onclick="decide('handoff-2', false, 'Over 2.5 goals — YES')">Skip</button>
-            <button class="tweak" onclick="toast('','Bet ticket','Stake editor is mock-only in this preview.')">Adjust stake</button>
-          </div>
-        </div>
+    <div class="card thread">
+      <div class="card-h">Chat with your agent</div>
+      <div class="thread-scroll" id="thread">
+        <div class="bubble agent"><span class="who">Agent</span><div class="body">I trade FIFA World Cup markets on demo.kalshi.co. Hit <b>🎯 Bet for me</b> and I'll fetch live markets, decide with the GRPO policy, sanity-check with the Holo validator, and place the bet in a browser you can watch live. My decision ticket will appear right here.</div></div>
       </div>
       <div class="chat-input">
         <input id="chat-box" type="text" placeholder="Ask about a market, set a limit, or give feedback…" onkeydown="if(event.key==='Enter')sendChat()">
@@ -339,289 +279,293 @@ td .sub { color:var(--faint); font-size:.78rem; }
 </section>
 
 <!-- ═══ MARKETS ═══ -->
-<section id="view-markets" hidden>
-  <div class="eyebrow">Live markets · demo.kalshi.co</div>
-  <h1>What the agent is watching</h1>
-  <p class="lede">37 liquid World Cup markets ranked by the policy's edge — the gap between the model's fair value and the market price. Bets above your $2 limit wait for approval here or in chat.</p>
-  <div class="tablewrap">
+<section class="view" id="view-markets" hidden>
+  <div class="hero">
+    <span class="ghost-num">02</span>
+    <span class="eyebrow">Live markets</span>
+    <h1>What it's <em>watching.</em></h1>
+    <p class="lede" id="markets-lede">No market snapshot yet — run “Bet for me” once and the markets fetched from Kalshi will show up here.</p>
+  </div>
+  <div class="sheet"><div class="scroll">
     <table>
       <thead><tr>
-        <th>Market</th><th>Side</th><th class="num">Price</th><th class="num">Fair value</th>
-        <th class="num">Edge</th><th>Confidence</th><th></th>
+        <th>Market</th><th>Type</th><th class="num">Yes price</th><th class="num">Volume</th>
       </tr></thead>
-      <tbody>
-        <tr>
-          <td><div class="mkt">France to win</div><div class="sub">France vs Brazil · SF</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">47¢</td><td class="num">58¢</td>
-          <td class="num pos">+11¢</td><td><span class="conf-bar"><i style="width:71%"></i></span></td>
-          <td><div class="rec-actions"><button class="mini go" data-view="deck">Review →</button></div></td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Total goals over 2.5</div><div class="sub">Argentina vs Netherlands · QF</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">61¢</td><td class="num">66¢</td>
-          <td class="num pos">+5¢</td><td><span class="conf-bar"><i style="width:64%"></i></span></td>
-          <td><div class="rec-actions"><button class="mini go" data-view="deck">Review →</button></div></td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Portugal to advance</div><div class="sub">Group stage · matchday 3</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">72¢</td><td class="num">74¢</td>
-          <td class="num pos">+2¢</td><td><span class="conf-bar"><i style="width:58%"></i></span></td>
-          <td><div class="rec-actions"><button class="mini" onclick="toast('','Below limit','Auto-placed — inside the $2 limit, no approval needed.')">Auto</button></div></td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Spain to win outright</div><div class="sub">Tournament winner</div></td>
-          <td><span class="tag no">NO</span></td><td class="num">18¢</td><td class="num">14¢</td>
-          <td class="num pos">+4¢</td><td><span class="conf-bar"><i style="width:52%"></i></span></td>
-          <td><div class="rec-actions"><button class="mini" onclick="toast('','Watching','Edge too thin to bet yet — agent is monitoring.')">Watch</button></div></td>
-        </tr>
-        <tr>
-          <td><div class="mkt">England clean sheet</div><div class="sub">England vs USA · R16</div></td>
-          <td><span class="tag no">NO</span></td><td class="num">55¢</td><td class="num">53¢</td>
-          <td class="num neg">−2¢</td><td><span class="conf-bar"><i style="width:44%"></i></span></td>
-          <td><div class="rec-actions"><button class="mini" onclick="toast('','Skipped','No edge — market fairly priced.')">Skip</button></div></td>
-        </tr>
+      <tbody id="markets-body">
+        <tr><td colspan="4">No snapshot yet.</td></tr>
       </tbody>
     </table>
-  </div>
+  </div></div>
 </section>
 
 <!-- ═══ POSITIONS ═══ -->
-<section id="view-positions" hidden>
-  <div class="eyebrow">Open positions</div>
-  <h1>What's live right now</h1>
-  <p class="lede">4 open bets · $14.00 at risk on demo money. Settled results feed straight back as reward signal for the next policy version.</p>
-  <div class="tablewrap">
+<section class="view" id="view-positions" hidden>
+  <div class="hero">
+    <span class="ghost-num">03</span>
+    <span class="eyebrow">Bets</span>
+    <h1>What's <em>live</em> right now.</h1>
+    <p class="lede" id="positions-lede">Every bet the agent has placed on demo.kalshi.co. Settled results feed straight back as reward signal for the next policy version.</p>
+  </div>
+  <div class="sheet"><div class="scroll">
     <table>
       <thead><tr>
-        <th>Market</th><th>Side</th><th class="num">Entry</th><th class="num">Now</th>
-        <th class="num">Stake</th><th class="num">Unrealized</th><th>Placed by</th>
+        <th>Date</th><th>Market</th><th>Side</th>
+        <th class="num">Stake</th><th>Status</th><th class="num">P&amp;L</th>
       </tr></thead>
-      <tbody>
-        <tr>
-          <td><div class="mkt">Argentina to win</div><div class="sub">vs Netherlands · QF</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">44¢</td><td class="num">51¢</td>
-          <td class="num">$5.00</td><td class="num pos">+$0.80</td><td>Agent · auto</td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Total goals over 2.5</div><div class="sub">Brazil vs Croatia · QF</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">58¢</td><td class="num">62¢</td>
-          <td class="num">$3.00</td><td class="num pos">+$0.21</td><td>You · approved</td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Morocco to advance</div><div class="sub">R16</div></td>
-          <td><span class="tag yes">YES</span></td><td class="num">39¢</td><td class="num">35¢</td>
-          <td class="num">$4.00</td><td class="num neg">−$0.41</td><td>Agent · auto</td>
-        </tr>
-        <tr>
-          <td><div class="mkt">Germany clean sheet</div><div class="sub">vs Japan · Group</div></td>
-          <td><span class="tag no">NO</span></td><td class="num">48¢</td><td class="num">49¢</td>
-          <td class="num">$2.00</td><td class="num pos">+$0.04</td><td>You · approved</td>
-        </tr>
+      <tbody id="positions-body">
+        <tr><td colspan="6">No bets yet — hit “🎯 Bet for me”.</td></tr>
       </tbody>
     </table>
-  </div>
+  </div></div>
 </section>
 
 </main>
-</div>
 
 <div id="toasts" role="status" aria-live="polite"></div>
 
 <script>
 /* ── view switching ── */
-const views = { deck:'view-deck', markets:'view-markets', positions:'view-positions' };
+const views = { command:'view-command', markets:'view-markets', positions:'view-positions' };
 function show(view) {
   Object.values(views).forEach(id => document.getElementById(id).hidden = true);
   document.getElementById(views[view]).hidden = false;
-  document.querySelectorAll('.nav-btn[data-view]').forEach(b =>
+  document.querySelectorAll('.topnav button[data-view]').forEach(b =>
     b.classList.toggle('active', b.dataset.view === view));
   window.scrollTo(0, 0);
 }
 document.querySelectorAll('[data-view]').forEach(el =>
   el.addEventListener('click', () => show(el.dataset.view)));
 
-/* ── pending-approval counter ── */
-let pending = 3;
-function renderPending() {
-  const badge = document.getElementById('nav-badge');
-  badge.textContent = pending; badge.style.display = pending ? '' : 'none';
-  const pill = document.getElementById('agent-pill');
-  if (!pending) { pill.textContent = 'running'; pill.className = 'pill run'; }
-  else { pill.textContent = 'needs you'; pill.className = 'pill wait'; }
+/* ── backend ── */
+const $id = id => document.getElementById(id);
+async function api(path, method = 'GET') {
+  const r = await fetch(path, { method });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
 }
 
-/* ── approve / reject a bet ── */
-function decide(id, ok, label) {
-  const card = document.getElementById(id);
-  if (card.classList.contains('decided')) return;
-  card.classList.add('decided');
-  card.querySelector('.actions').innerHTML = ok
-    ? '<span class="verdict ok">✓ Bet placed on demo.kalshi.co</span>'
-    : '<span class="verdict no">✕ Skipped — logged as a lesson for policy v2</span>';
-  pending--; renderPending();
-  addFeed(ok ? `<b>You approved:</b> ${label}` : `<b>You skipped:</b> ${label}`, 'you');
-  setTimeout(() => {
-    agentSay(ok
-      ? `Placed ${label} on demo.kalshi.co. I'll treat similar edges as safe to size up next time.`
-      : `Skipped it. I logged the reason so policy v2 stops proposing bets like this.`);
-    if (ok) addFeed(`<b>Reward +0.8</b> — approved bet placed`, 'reward');
-  }, 900);
-  toast(ok ? 'win' : 'human', 'Betting agent',
-        ok ? `Placed: ${label}` : `Skipped: ${label} — lesson saved.`);
+let betRunning = false;
+function setState(mode) {   // 'run' | 'busy' | 'off'
+  const tag = $id('state-tag');
+  if (mode === 'busy')      { tag.textContent = 'Betting…';        tag.className = 'state-tag wait'; }
+  else if (mode === 'off')  { tag.textContent = 'Backend offline'; tag.className = 'state-tag off'; }
+  else                      { tag.textContent = 'Running';         tag.className = 'state-tag run'; }
+  $id('conn-chip').textContent = mode === 'off' ? 'offline — run: python server.py' : 'Running · demo.kalshi.co';
 }
 
-/* ── chat ── */
-function agentSay(text) {
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg agent';
-  div.innerHTML = '<span class="who">Agent</span>' + text;
-  chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-}
-function sendChat() {
-  const box = document.getElementById('chat-box');
-  const text = box.value.trim(); if (!text) return;
-  const chat = document.getElementById('chat');
-  const div = document.createElement('div');
-  div.className = 'msg me';
-  div.innerHTML = '<span class="who">You</span>';
-  div.appendChild(document.createTextNode(text));
-  chat.appendChild(div); box.value = ''; chat.scrollTop = chat.scrollHeight;
-  setTimeout(() => agentSay("Got it. (This preview isn't wired to the model yet — once GRPO training on port 8787 finishes, replies and bets come from your fine-tuned policy.)"), 800);
-}
-
-/* ── live feed ticker ── */
-const tickerItems = [
-  ['Re-priced <b>France to win</b> → 58¢ fair value', ''],
-  ['Model sampled 4 decisions on <b>Total goals</b>', ''],
-  ['Holo validator <b>vetoed</b> a low-edge bet', ''],
-  ['<b>Reward +0.3</b> — calibration held on 5 settled bets', 'reward'],
-  ['<b>Won +$0.90</b> — Portugal to advance settled YES', 'win'],
-  ['Skipped <b>England clean sheet</b> — no edge', ''],
-];
-let tick = 0;
-function addFeed(html, cls) {
-  const feed = document.getElementById('feed');
-  const li = document.createElement('li');
-  if (cls) li.className = cls;
+/* ── live stream ── */
+function addStream(html, cls) {
+  const s = $id('stream');
+  const li = document.createElement('li'); if (cls) li.className = cls;
   const now = new Date();
-  li.innerHTML = `<span class="t">${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span><span class="what">${html}</span>`;
-  feed.appendChild(li); feed.scrollTop = feed.scrollHeight;
-}
-setInterval(() => addFeed(...(() => { const it = tickerItems[tick++ % tickerItems.length]; return [it[0], it[1]]; })()), 7000);
-
-/* ── pause ── */
-let paused = false;
-function togglePause() {
-  paused = !paused;
-  document.getElementById('pause-btn').textContent = paused ? 'Resume agent' : 'Pause agent';
-  const pill = document.getElementById('agent-pill');
-  if (paused) { pill.textContent = 'paused'; pill.className = 'pill'; pill.style.cssText='color:var(--faint);border:1px solid var(--line)'; }
-  else { pill.style.cssText=''; renderPending(); }
-  toast('', 'Betting agent', paused ? 'Paused. It will place no new bets until you resume.' : 'Resumed. Scanning markets again.');
+  li.innerHTML = `<span class="t">${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span><span class="x"><span class="arw">→</span> ${html}</span>`;
+  s.appendChild(li); s.scrollTop = s.scrollHeight;
 }
 
 /* ── toasts ── */
 function toast(kind, who, text) {
-  const wrap = document.getElementById('toasts');
-  const div = document.createElement('div');
-  div.className = 'toast' + (kind ? ' ' + kind : '');
-  div.innerHTML = `<span class="who">${who}</span>${text}`;
-  wrap.appendChild(div);
-  setTimeout(() => div.remove(), 6000);
-}
-setTimeout(() => toast('learn', 'Model', 'GRPO training passed step 12/40 — reward trend holding.'), 11000);
-setTimeout(() => toast('win', 'Betting agent', 'Won +$1.20 — Argentina to win moved to 51¢.'), 24000);
-setTimeout(() => toast('human', 'Betting agent', "Still waiting on you: France to win — YES · $3.50."), 38000);
-
-renderPending();
-
-/* ── live backend wiring (server.py) ────────────────────────────────────────
-   Falls back silently to the mock UI if the backend isn't running, so the
-   page still works when opened as a static file. */
-const API = '';   // same origin as server.py
-
-async function api(path, method = 'GET') {
-  const res = await fetch(API + path, { method });
-  if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-  return res.json();
+  const wrap = $id('toasts');
+  const d = document.createElement('div'); d.className = 'toast' + (kind ? ' ' + kind : '');
+  d.innerHTML = `<span class="who">${who}</span>${text}`;
+  wrap.appendChild(d);
+  setTimeout(() => d.remove(), 6000);
 }
 
-async function addFunds() {
-  const btn = document.getElementById('fund-btn');
-  btn.disabled = true; btn.textContent = 'Starting…';
-  try {
-    const r = await api('/api/fund?amount=100', 'POST');
-    toast('human', 'Betting agent', `Add-funds session started — watch it drive: ${r.watch_url}`);
-    window.open(r.watch_url, '_blank');
-  } catch (e) {
-    toast('', 'Backend', `Add funds needs the backend: run "python server.py" (${e.message}).`);
-  } finally {
-    btn.disabled = false; btn.textContent = '＋ Add demo funds';
+/* ── chat ── */
+function agentSay(text) {
+  const t = $id('thread');
+  const d = document.createElement('div'); d.className = 'bubble agent';
+  d.innerHTML = '<span class="who">Agent</span><div class="body">' + text + '</div>';
+  t.appendChild(d); t.scrollTop = t.scrollHeight;
+}
+function sendChat() {
+  const box = $id('chat-box');
+  const text = box.value.trim(); if (!text) return;
+  const t = $id('thread');
+  const d = document.createElement('div'); d.className = 'bubble me';
+  const b = document.createElement('div'); b.className = 'body'; b.textContent = text;
+  d.innerHTML = '<span class="who">You</span>'; d.appendChild(b);
+  t.appendChild(d); box.value = ''; t.scrollTop = t.scrollHeight;
+  setTimeout(() => agentSay("Got it. Chat replies aren't wired to the policy yet — but 🎯 Bet for me runs the real pipeline and I'll narrate every step here."), 600);
+}
+
+/* ── stats + positions ── */
+function renderPositions(bets) {
+  const tb = $id('positions-body');
+  if (!bets || !bets.length) {
+    tb.innerHTML = '<tr><td colspan="6">No bets yet — hit “🎯 Bet for me”.</td></tr>';
+    return;
   }
+  tb.innerHTML = bets.map(b => {
+    const st = b.status === 'won'  ? '<span class="pos">won</span>'
+             : b.status === 'lost' ? '<span class="neg">lost</span>'
+             : b.status;
+    const pl = b.pl == null ? '–'
+             : `<span class="${b.pl >= 0 ? 'pos' : 'neg'}">${b.pl >= 0 ? '+' : '−'}$${Math.abs(b.pl).toFixed(2)}</span>`;
+    return `<tr>
+      <td class="num">${b.date.slice(5, 16)}</td>
+      <td><div class="mkt">${b.market}</div></td>
+      <td><span class="tag ${b.direction === 'NO' ? 'no' : 'yes'}">${b.direction}</span></td>
+      <td class="num">$${b.amount.toFixed(2)}</td>
+      <td>${st}</td>
+      <td class="num">${pl}</td>
+    </tr>`;
+  }).join('');
 }
 
-/* Human-in-the-loop: the human approves the top-up, the agent executes it in
-   the browser, and the card resolves with the live session link. */
-async function approveFunds() {
-  const card = document.getElementById('handoff-fund');
-  if (card.classList.contains('decided')) return;
-  card.classList.add('decided');
-  const actions = card.querySelector('.actions');
-  actions.innerHTML = '<span class="verdict ok">✓ Approved — starting browser session…</span>';
-  pending--; renderPending();
-  addFeed('<b>You approved:</b> add $100 demo funds', 'you');
-  try {
-    const r = await api('/api/fund?amount=100', 'POST');
-    actions.innerHTML = `<span class="verdict ok">✓ Funding in progress — <a href="${r.watch_url}" target="_blank">watch live →</a></span>`;
-    agentSay(`On it — I'm topping up the demo balance to $100 now. <a href="${r.watch_url}" target="_blank" style="color:var(--learn)">Watch me do it live →</a> Once it lands, approved bets will fill.`);
-    addFeed('<b>Adding funds</b> — browser session live', 'reward');
-    window.open(r.watch_url, '_blank');
-  } catch (e) {
-    actions.innerHTML = `<span class="verdict no">✕ Backend offline — run "python server.py" first</span>`;
-    agentSay(`I couldn't start the funding session — the backend isn't running. Start it with <b>python server.py</b> and reopen this page. (${e.message})`);
-  }
-}
-
-async function runBet() {
-  const btn = document.getElementById('bet-btn');
-  btn.disabled = true; btn.textContent = 'Running…';
-  try {
-    await api('/api/bet', 'POST');
-    toast('learn', 'Betting agent', 'Bet pipeline launched — decision → browser execution. Polling for the result…');
-    setTimeout(refreshStats, 20000);
-  } catch (e) {
-    toast('', 'Backend', `Run needs the backend: run "python server.py" (${e.message}).`);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Run bet pipeline';
-  }
-}
-
-async function refreshStats() {
+async function loadStats() {
   try {
     const s = await api('/api/stats');
-    const pnl = document.getElementById('tele-pnl');
-    if (pnl) {
-      pnl.textContent = (s.pnl >= 0 ? '+' : '') + '$' + s.pnl.toFixed(2);
-      pnl.className = 'value ' + (s.pnl >= 0 ? 'pos' : 'neg');
-    }
-    const badge = document.getElementById('agent-pill');
-    if (badge && s.total_bets > 0)
-      toast('', 'Stats', `${s.total_bets} bets recorded · ${s.wins}W/${s.losses}L · net $${s.pnl.toFixed(2)}`);
-  } catch (e) { /* backend not running — keep mock values */ }
+    $id('st-bets').textContent = s.total_bets;
+    $id('st-rec').textContent = `${s.wins}–${s.losses}`;
+    $id('st-wr').textContent = s.win_rate == null ? '–' : Math.round(s.win_rate * 100) + '%';
+    $id('st-wag').textContent = '$' + s.wagered.toFixed(2);
+    const pnl = $id('st-pnl');
+    pnl.textContent = (s.pnl >= 0 ? '+$' : '−$') + Math.abs(s.pnl).toFixed(2);
+    pnl.className = 'n ' + (s.pnl >= 0 ? 'pos' : 'neg');
+    const open = (s.bets || []).filter(b => b.status === 'pending');
+    $id('positions-lede').textContent = s.total_bets
+      ? `${s.total_bets} bets on demo.kalshi.co · ${open.length} open. Settled results feed straight back as reward signal for the next policy version.`
+      : 'Every bet the agent places on demo.kalshi.co will show up here, newest first.';
+    renderPositions(s.bets);
+    setState(betRunning ? 'busy' : 'run');
+  } catch (e) { setState('off'); }
 }
 
-async function checkModel() {
+/* ── model / policy line ── */
+async function loadModel() {
   try {
     const m = await api('/api/model');
-    const row = document.querySelector('.side-status .row[style]');
-    if (row) row.textContent = m.trained ? '◆ Policy live (GRPO adapter)' : '◆ Base policy (untrained)';
-  } catch (e) { /* offline */ }
+    $id('pol-badge').textContent = m.trained ? 'GRPO policy · live' : 'base policy · untrained';
+    $id('pol-fill').style.width = m.trained ? '100%' : '10%';
+    $id('pol-model').textContent = m.base + (m.trained ? ' + LoRA' : '');
+  } catch (e) {}
 }
 
-// Link the platform to the live model on load.
-refreshStats();
-checkModel();
+/* ── markets snapshot ── */
+async function loadMarkets() {
+  try {
+    const m = await api('/api/markets');
+    if (!m.markets.length) return;
+    $id('markets-lede').textContent =
+      `${m.total} open World Cup markets on Kalshi — the ${m.sent} most liquid were sent to the model on the last run.`;
+    $id('markets-body').innerHTML = m.markets.map(x => `<tr>
+      <td><div class="mkt">${x.ticker}</div></td>
+      <td><span class="tag yes">${x.type.replace(/_/g, ' ')}</span></td>
+      <td class="num">${Math.round(x.yes * 100)}¢</td>
+      <td class="num">$${x.volume.toLocaleString()}</td>
+    </tr>`).join('');
+  } catch (e) {}
+}
+
+/* ── bet pipeline ── */
+let betPoll = null, decisionCard = null;
+
+function showDecision(d, watchUrl) {
+  const t = $id('thread');
+  const div = document.createElement('div'); div.className = 'approval decided';
+  div.innerHTML = `
+    <div class="ap-top">
+      <div class="ap-eyebrow">◆ Model decision</div>
+      <h4>${d.ticker} — ${d.direction}</h4>
+      <div class="ap-sub">GRPO policy · Holo-validated · executing via browser</div>
+    </div>
+    <dl class="ticket">
+      <dt>Side</dt><dd class="side">${d.direction}</dd>
+      <dt>Stake</dt><dd>$${d.amount.toFixed(2)}</dd>
+      <dt>Confidence</dt><dd>${d.confidence}%</dd>
+    </dl>
+    <div class="verdict" style="color:var(--ochre);background:var(--ochre-tint)">⏳ Executing in browser…${watchUrl ? ` <a href="${watchUrl}" target="_blank" style="color:inherit">watch live →</a>` : ''}</div>`;
+  t.appendChild(div); t.scrollTop = t.scrollHeight;
+  decisionCard = div;
+}
+function setVerdict(ok, text) {
+  if (!decisionCard) return;
+  const v = decisionCard.querySelector('.verdict');
+  v.className = 'verdict ' + (ok ? 'ok' : 'no');
+  v.removeAttribute('style');
+  v.textContent = text;
+}
+
+async function betForMe() {
+  if (betRunning) return;
+  const btn = $id('bet-btn'); btn.disabled = true;
+  betRunning = true; decisionCard = null; setState('busy');
+  addStream('<b>Bet for me</b> — starting full pipeline (markets → model → browser)');
+  agentSay('On it. Fetching live World Cup markets from Kalshi, then my policy picks the bet and a browser agent places it. Watch the activity feed.');
+  try {
+    await api('/api/bet', 'POST');
+  } catch (e) {
+    addStream(`<b>Failed to start:</b> ${e.message}`, 'loss');
+    toast('human', 'Betting agent', 'Could not start the pipeline: ' + e.message);
+    betRunning = false; btn.disabled = false; setState('run');
+    return;
+  }
+  const announced = {};
+  clearInterval(betPoll);
+  betPoll = setInterval(async () => {
+    let w;
+    try { w = await api('/api/bet-watch'); } catch { return; }
+    if (w.phase !== 'starting' && !announced.fetch) {
+      announced.fetch = true;
+      addStream('Markets fetched — <b>GRPO model deciding…</b>');
+    }
+    if (w.decision && !announced.decision) {
+      announced.decision = true;
+      showDecision(w.decision, w.watch_url);
+      addStream(`Model decided: <b>${w.decision.direction} ${w.decision.ticker}</b> · $${w.decision.amount.toFixed(2)} · ${w.decision.confidence}% conf`, 'reward');
+    }
+    if (w.watch_url && !announced.watch) {
+      announced.watch = true;
+      addStream(`Browser placing the bet — <a href="${w.watch_url}" target="_blank">watch live →</a>`, 'you');
+      toast('human', 'Browser agent', 'Placing the bet now — watch it live.');
+      window.open(w.watch_url, '_blank');
+    }
+    if (w.phase === 'done') {
+      clearInterval(betPoll);
+      betRunning = false; btn.disabled = false; setState('run');
+      if (w.result === 'placed') {
+        addStream('<b>Bet placed</b> on demo.kalshi.co', 'win');
+        setVerdict(true, '✓ Bet placed on demo.kalshi.co');
+        toast('win', 'Betting agent', 'Bet placed successfully.');
+        agentSay('Placed. It shows under Positions — and when it settles, the result becomes a reward-labelled trajectory for the next policy.');
+      } else if (w.result === 'insufficient_funds') {
+        addStream('<b>Insufficient demo funds</b> — add funds first', 'loss');
+        setVerdict(false, '✕ Insufficient funds — hit “＋ Add funds”');
+        agentSay('The demo account is out of funds. Hit “＋ Add funds” and I\'ll try again.');
+      } else if (w.result === 'skipped') {
+        addStream('Model <b>skipped</b> — no market with enough edge right now');
+        agentSay('I looked at the live markets but none had enough edge to bet on. I\'ll have better luck when prices move — try again later.');
+      } else {
+        addStream('<b>Execution failed</b> — see data/last_bet.log', 'loss');
+        setVerdict(false, '✕ Execution failed — see data/last_bet.log');
+      }
+      loadStats(); loadMarkets();
+    }
+  }, 3000);
+}
+
+/* ── add funds (human-in-the-loop browser session) ── */
+async function addFunds() {
+  const btn = $id('fund-btn'); btn.disabled = true;
+  addStream('Adding demo funds — starting browser session…');
+  try {
+    const r = await api('/api/fund?amount=100', 'POST');
+    addStream(`Top-up running — <a href="${r.watch_url}" target="_blank">watch the browser →</a>`, 'you');
+    toast('human', 'Add funds', 'Browser session started — watch the top-up live.');
+    window.open(r.watch_url, '_blank');
+  } catch (e) {
+    addStream(`<b>Add funds failed:</b> ${e.message}`, 'loss');
+    toast('human', 'Add funds', 'Failed: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+/* ── boot ── */
+addStream('Command center connected — stats refresh every 15s');
+loadStats(); loadModel(); loadMarkets();
+setInterval(loadStats, 15000);
 </script>
 </body>
 </html>

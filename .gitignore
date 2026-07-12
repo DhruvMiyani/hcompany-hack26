@@ -8,5 +8,7 @@ data/agent_memory.db
 *.db-wal
 .DS_Store
 
-# GRPO model weights — large binaries, reproducible via `python main.py simulate`
-data/grpo_weights/
+# GRPO model weights — checkpoints ignored, but the latest trained adapter
+# is committed so the team can run the fine-tuned policy without retraining
+data/grpo_weights/*
+!data/grpo_weights/adapter/

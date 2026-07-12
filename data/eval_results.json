@@ -1,36 +1,42 @@
 {
   "base": {
-    "n": 8,
-    "valid_json_rate": 0.75,
-    "actionable_rate": 0.75,
-    "mean_reward": -0.625,
+    "n": 10,
+    "valid_json_rate": 0.7,
+    "actionable_rate": 0.7,
+    "grounded_rate": 0.6,
+    "mean_reward": 0.1018,
     "rewards": [
+      -0.35,
+      -0.6,
+      -0.35,
       -0.7,
-      -0.6,
-      -0.6,
-      -0.6,
-      -0.7,
-      -0.6,
-      -0.6,
-      -0.6
+      0.744,
+      0.75,
+      0.416,
+      0.57,
+      0.368,
+      0.17
     ],
-    "sample_completion": "{\"skip\": false, \"ticker\": \"KXWC\", \"direction\": \"No\", \"amount\": 0.02, \"confidence\": 0.98, \"reasoning\":(detected significant underdog advantage in.Ribbon Goalscorer bet)}"
+    "sample_completion": "{\"skip\": false, \"market_id\": \"M3\", \"direction\": \"Yes\", \"amount\": 0.42\ud800\udf32\ufe0f, \"confidence\": 0.99, \"reasoning\": \"\u5e02\u573a\u663e\u793a\u53cc\u65b9\u592b\u5987\u7684\u80dc\u7387\u8f83\u9ad8\uff0c\u4e14\u4ef7\u683c\u5408\u7406\"}"
   },
   "grpo": {
-    "n": 8,
-    "valid_json_rate": 0.75,
-    "actionable_rate": 0.75,
-    "mean_reward": -0.625,
+    "n": 10,
+    "valid_json_rate": 0.7,
+    "actionable_rate": 0.7,
+    "grounded_rate": 0.6,
+    "mean_reward": 0.05100000000000001,
     "rewards": [
+      -0.35,
       -0.6,
-      -0.6,
-      -0.6,
-      -0.6,
-      -0.6,
+      -0.35,
       -0.7,
-      -0.7,
-      -0.6
+      0.744,
+      0.242,
+      0.416,
+      0.57,
+      0.368,
+      0.17
     ],
-    "sample_completion": "{\"skip\": false, \"ticker\": \"KXWC\", \"direction\": \"Yes\", \"amount\": 1, \"confidence\": 0.73, \"reasoning\": \"The current market suggests a strong favoritism for KXWC against any time goalscorers.\"}"
+    "sample_completion": "{\"skip\": false, \"market_id\": \"M3\", \"direction\": \"Yes\", \"amount\": 0.42\ud800\udf32\ufe0f, \"confidence\": 0.99, \"reasoning\": \"\u5e02\u573a\u663e\u793a\u53cc\u65b9\u592b\u5987\u7684\u80dc\u7387\u8f83\u9ad8\uff0c\u4e14\u4ef7\u683c\u5408\u7406\"}"
   }
 }

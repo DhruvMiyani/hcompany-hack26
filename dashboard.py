@@ -139,7 +139,12 @@ PAGE = """<!doctype html>
   .grpo ol { margin:.25rem 0 0 1.25rem; color:var(--dim); font-size:.85rem; }
   .grpo li { margin:.3rem 0; }
   .grpo li b { color:var(--fg); font-weight:600; }
+  .topnav { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+  .topnav a { color:var(--blue); text-decoration:none; font-size:.85rem; font-weight:600;
+              border:1px solid var(--border); border-radius:6px; padding:.35rem .7rem; }
+  .topnav a:hover { border-color:var(--blue); background:#0d2137; }
 </style></head><body>
+<div class="topnav"><a href="http://localhost:4321/">← Full command center</a></div>
 <h1>GRPO Fine-tuning <span id="phase" class="phase other">…</span></h1>
 <div class="sub">Qwen2.5-0.5B · LoRA · Kalshi FIFA World Cup betting agent · auto-refreshes every 2s</div>
 

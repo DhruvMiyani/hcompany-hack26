@@ -220,6 +220,7 @@ def _fetch_event_markets(event_ticker: str) -> list[Market]:
             category=category,
             match=match,
             last_price=last_price,
+            outcome=m.get("yes_sub_title") or None,
         ))
 
     return result

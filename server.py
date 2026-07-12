@@ -7,6 +7,7 @@ Backend that links the betting model + browser agent to the Tandem UI.
 Zero extra deps (stdlib http.server). Serves platform/index.html and exposes:
   GET  /api/stats     → performance summary + recent bets from SQLite
   GET  /api/model     → live GRPO adapter status
+  GET  /api/markets   → market snapshot parsed from the last bet run's log
   POST /api/fund      → kick off add-funds browser session   → watch URL
   POST /api/kickoff   → kick off check/scrape browser session → watch URL
   POST /api/bet       → run the full bet pipeline in background
@@ -122,7 +123,25 @@ def bet_watch() -> dict:
         out["phase"] = "done"; out["result"] = "insufficient_funds"
     elif "Execution failed" in text:
         out["phase"] = "done"; out["result"] = "failed"
+    elif "Skipped —" in text:
+        out["phase"] = "done"; out["result"] = "skipped"
+    elif "Traceback (most recent call last)" in text:
+        out["phase"] = "done"; out["result"] = "failed"
     return out
+
+
+def markets_snapshot() -> dict:
+    """Parse the last bet run's log for the markets that were sent to the model."""
+    import re
+    if not BET_LOG.exists():
+        return {"total": 0, "sent": 0, "markets": []}
+    text = BET_LOG.read_text(errors="replace")
+    m = re.search(r"(\d+) WC markets total, (\d+) sent to model", text)
+    total, sent = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+    markets = [{"type": t, "ticker": tk, "yes": float(y), "volume": int(v.replace(",", ""))}
+               for t, tk, y, v in
+               re.findall(r"\[(\w+)\] (\S+) \| Yes=([\d.]+) \| Vol=\$([\d,]+)", text)]
+    return {"total": total, "sent": sent, "markets": markets}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -157,6 +176,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(model_status())
             elif path == "/api/bet-watch":
                 self._json(bet_watch())
+            elif path == "/api/markets":
+                self._json(markets_snapshot())
             else:
                 self._json({"error": "not found"}, 404)
         except Exception as e:

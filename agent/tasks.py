@@ -40,8 +40,20 @@ def execute_bet_task(
     direction: str,
     amount: float,
     ticker: str = "",
+    outcome: str = "",
 ) -> str:
-    search_hint = f"ticker {ticker}" if ticker else f'title "{market[:60]}"'
+    # Kalshi's search bar matches market titles, not raw tickers — strip the
+    # short-ID prefix (e.g. "[FRA vs ESP] ") and search by the plain title.
+    # Multi-outcome markets (e.g. "France vs Spain Winner?") are ONE page with
+    # several outcome rows; `outcome` says which row to bet on (e.g. "Reg Time: Tie").
+    import re
+    search_title = re.sub(r"^\[[^\]]*\]\s*", "", market).strip()[:60]
+    outcome_step = (
+        f'3. On the market page, find the outcome row "{outcome}" '
+        f"(the market has multiple outcomes — pick exactly this one)\n"
+        if outcome else ""
+    )
+    n = 4 if outcome else 3
     return f"""
 Go to {url} and log in with these credentials:
   Email: {email}
@@ -51,15 +63,18 @@ Place EXACTLY this bet — do not re-evaluate or choose a different market:
 
   Market ticker : {ticker or "N/A"}
   Market title  : {market[:80]}
+  Outcome       : {outcome or "N/A"}
   Direction     : {direction}
   Amount        : ${amount:.2f}
 
 Steps (execute quickly):
-1. After login, use the search bar to find the market by {search_hint}
+1. After login, type the market TITLE into the search bar: "{search_title}"
+   (search by title, NOT by ticker — the ticker is only to confirm you found
+   the right market once you're on its page)
 2. Click into that specific market
-3. Select the {direction} side
-4. Enter ${amount:.2f} in the amount field
-5. Click Confirm / Buy to submit the order
+{outcome_step}{n}. Select the {direction} side{f' for outcome "{outcome}"' if outcome else ""}
+{n+1}. Enter ${amount:.2f} in the amount field
+{n+2}. Click Confirm / Buy to submit the order
 
 Report back with these exact labels:
 STATUS: [Bet placed successfully / Error: <description>]
