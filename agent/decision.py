@@ -25,6 +25,7 @@ class Market(BaseModel):
     last_price: Optional[float] = None  # last traded (tracks market direction)
     outcome: Optional[str] = None    # yes_sub_title e.g. "Reg Time: Tie"
     momentum: Optional[float] = None  # 24h price change (last - previous close)
+    open_interest: Optional[float] = None  # money at risk (pre-match liquidity)
 
 
 class BetDecision(BaseModel):

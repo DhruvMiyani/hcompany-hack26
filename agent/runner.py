@@ -69,9 +69,40 @@ def run_full_bet_cycle(
         vol_str = f"Vol=${m.volume:,.0f}" if m.volume else "Vol=?"
         print(f"    [{m.category}] {m.ticker} | Yes={m.yes_price} | {vol_str}", file=sys.stderr)
 
+    # ── Phase 2·0: tabular champion (XGBoost edge picker) ───────────────────
+    # The research-loop champion scores every market in milliseconds. If any
+    # side has edge > margin it decides directly and we skip the LLM phases.
+    tab_decision = None
+    print("\n[Phase 2] Tabular champion — scoring all markets for edge...",
+          file=sys.stderr)
+    try:
+        from .tabular_policy import TabularPolicy
+        tab = TabularPolicy()
+        tab_decision = tab.decide(markets, max_amount)
+        if tab_decision:
+            print(
+                f"  [XGB] → {tab_decision.direction} | {tab_decision.ticker} "
+                f"| ${tab_decision.amount:.2f} "
+                f"| conf={tab_decision.confidence:.0%}",
+                file=sys.stderr,
+            )
+            print(f"  [XGB] {tab_decision.reasoning}", file=sys.stderr)
+        else:
+            print(f"  [{tab.name}] no market clears the edge margin — "
+                  "falling back to GRPO/Holo", file=sys.stderr)
+    except Exception as e:
+        print(f"  [XGB] unavailable ({e}) — falling back to GRPO/Holo",
+              file=sys.stderr)
+
     # ── Phase 2A: GRPO policy model ──────────────────────────────────────────
     grpo        = get_grpo()
     grpo_decision: Optional[BetDecision] = None
+
+    if tab_decision is not None:
+        # XGBoost found an edge — decision made in milliseconds, skip the
+        # slow LLM phases entirely.
+        decision = {"bet": tab_decision, "source": "xgb_edge"}
+        return _execute_decision(decision, all_markets, markets)
 
     print("\n[Phase 2A] GRPO policy model (Qwen2.5-1.5B)...", file=sys.stderr)
     if grpo.is_available():
@@ -109,6 +140,11 @@ def run_full_bet_cycle(
 
     # ── Ensemble: pick final decision ─────────────────────────────────────────
     decision = _pick_decision(grpo_decision, holo_decision, markets)
+    return _execute_decision(decision, all_markets, markets)
+
+
+def _execute_decision(decision: dict, all_markets: list, markets: list) -> dict:
+    """Phase 3: hand the final decision to the browser agent."""
     print(f"\n[Decision] source={decision.get('source')} skip={decision['bet'].skip}", file=sys.stderr)
 
     final: BetDecision = decision["bet"]

@@ -225,6 +225,7 @@ def _fetch_event_markets(event_ticker: str) -> list[Market]:
             last_price=last_price,
             outcome=m.get("yes_sub_title") or None,
             momentum=momentum,
+            open_interest=float(m.get("open_interest_fp") or 0) or None,
         ))
 
     return result
