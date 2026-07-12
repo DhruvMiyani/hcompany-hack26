@@ -40,6 +40,8 @@ def example_to_market(ex: dict) -> Market:
         volume=ex.get("open_interest") or None,   # pre-match OI, not final volume
         category=ex["category"],
         outcome=ex.get("outcome") or None,
+        momentum=ex.get("momentum"),
+        closes=(ex.get("close_time") or "")[:16].replace("T", " ") or None,
     )
 
 

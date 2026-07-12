@@ -24,6 +24,7 @@ class Market(BaseModel):
     match: Optional[str] = None      # "ARG vs SUI"
     last_price: Optional[float] = None  # last traded (tracks market direction)
     outcome: Optional[str] = None    # yes_sub_title e.g. "Reg Time: Tie"
+    momentum: Optional[float] = None  # 24h price change (last - previous close)
 
 
 class BetDecision(BaseModel):

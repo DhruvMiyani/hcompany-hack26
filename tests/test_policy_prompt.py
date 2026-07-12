@@ -17,6 +17,27 @@ def test_build_prompt_assigns_sequential_short_ids(markets):
         assert f"[{mid}]" in prompt
 
 
+def test_build_prompt_includes_outcome_momentum_and_close(markets):
+    from agent.decision import Market
+    m = Market(name="X", ticker="KXWCGAME-26JUL14FRAESP-TIE",
+               yes_price=0.30, no_price=0.70, volume=33_855,
+               category="match_winner", outcome="Reg Time: Tie",
+               momentum=0.04, closes="2026-07-14 19:00")
+    prompt, id_map = build_prompt([m], [])
+    line = prompt.splitlines()[1]
+    assert '"Reg Time: Tie"' in line
+    assert "Δ24h=+0.04" in line
+    assert "closes 07-14 19:00" in line
+    # richer line must still round-trip through the training-reward parser
+    assert parse_index(prompt)["M1"]["ticker"] == m.ticker
+
+
+def test_build_prompt_omits_missing_extras(markets):
+    prompt, _ = build_prompt(markets[3:4], [])   # fixture market: no outcome/momentum
+    line = prompt.splitlines()[1]
+    assert "Δ24h" not in line and '"' not in line
+
+
 def test_build_prompt_mentions_max_amount_and_schema(markets):
     prompt, _ = build_prompt(markets, [], max_amount=3.5)
     assert "Max bet: $3.50" in prompt

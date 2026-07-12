@@ -23,9 +23,9 @@ Pick a market by its short id (e.g. "M3"). Bet only on the listed markets.
 Return ONLY the JSON — no markdown, no text outside the JSON."""
 
 _ID_RE = re.compile(
-    r"\[(?P<id>M\d+)\]\s*\((?P<cat>[^)]*)\)\s*(?P<ticker>\S+)"
-    r"\s*\|\s*Yes=(?P<yes>[\d.]+)\s*No=(?P<no>[\d.]+)"
-    r"\s*\|\s*Vol=\$?(?P<vol>[\d,?]+)"
+    r"\[(?P<id>M\d+)\]\s*\((?P<cat>[^)]*)\)\s*(?P<ticker>\S+)[^|]*"
+    r"\|\s*Yes=(?P<yes>[\d.]+)\s*No=(?P<no>[\d.]+)[^|]*"
+    r"\|\s*Vol=\$?(?P<vol>[\d,?]+)"
 )
 
 SCHEMA = ('{"skip": bool, "market_id": "M<n>", "direction": "Yes"|"No", '
@@ -42,8 +42,12 @@ def build_prompt(markets: list[Market], strategy_rules: list[str],
         mid = f"M{i}"
         id_map[mid] = m
         vol = f"Vol=${m.volume:,.0f}" if m.volume else "Vol=?"
-        lines.append(f"[{mid}] ({m.category or '?'}) {m.ticker}"
-                     f" | Yes={m.yes_price:.2f} No={m.no_price:.2f} | {vol}")
+        outcome = f' "{m.outcome}"' if m.outcome else ""
+        mom = (f" Δ24h={m.momentum:+.2f}" if m.momentum is not None else "")
+        closes = f" | closes {m.closes[5:16]}" if m.closes else ""
+        lines.append(f"[{mid}] ({m.category or '?'}) {m.ticker}{outcome}"
+                     f" | Yes={m.yes_price:.2f} No={m.no_price:.2f}{mom}"
+                     f" | {vol}{closes}")
 
     rules = "\n".join(f"  {i+1}. {r}" for i, r in enumerate(strategy_rules)) or "  (none)"
     lesson_txt = "\n".join(f"  • {l['lesson']}" for l in lessons[:5]) or "  None yet."

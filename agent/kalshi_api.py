@@ -194,6 +194,9 @@ def _fetch_event_markets(event_ticker: str) -> list[Market]:
             no_price = round(1.0 - yes_price, 3)
 
         last_price = _price(m.get("last_price_dollars"))
+        prev_price = _price(m.get("previous_price_dollars"))
+        momentum = (round(last_price - prev_price, 4)
+                    if last_price and prev_price else None)
         volume = float(m.get("volume_fp") or 0) or None
         close_time = (m.get("close_time") or "")[:16].replace("T", " ")
 
@@ -221,6 +224,7 @@ def _fetch_event_markets(event_ticker: str) -> list[Market]:
             match=match,
             last_price=last_price,
             outcome=m.get("yes_sub_title") or None,
+            momentum=momentum,
         ))
 
     return result
