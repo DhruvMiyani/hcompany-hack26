@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .decision import Market, BetDecision
 from .dataset import load_dataset, load_history, enrich
-from .simple_model import SimpleModel, BoostedModel
+from .simple_model import SimpleModel, BoostedModel, CATEGORIES
 
 CHAMPION_PATH = Path(__file__).parent.parent / "data" / "tabular_champion.json"
 EDGE_MARGIN = 0.05
@@ -53,6 +53,9 @@ class TabularPolicy:
 
     def decide(self, markets: list[Market], max_amount: float = 5.0,
                margin: float = EDGE_MARGIN) -> BetDecision | None:
+        # Only bet categories the model has training data for — on anything
+        # else (e.g. goalscorer markets) its probabilities are extrapolation.
+        markets = [m for m in markets if m.category in CATEGORIES]
         if not markets:
             return None
         exs = enrich([market_to_example(m) for m in markets])

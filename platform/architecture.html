@@ -209,7 +209,8 @@ td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric
     <div class="metric"><div class="l">Precision</div><div class="n" id="m-prec">–</div><div class="s" id="m-prec-s"></div></div>
     <div class="metric"><div class="l">Recall</div><div class="n" id="m-rec">–</div><div class="s" id="m-rec-s"></div></div>
     <div class="metric"><div class="l">F1</div><div class="n vio" id="m-f1">–</div><div class="s" id="m-f1-s"></div></div>
-    <div class="metric"><div class="l">ROI</div><div class="n" id="m-roi">–</div><div class="s" id="m-roi-s"></div></div>
+    <div class="metric"><div class="l">ROI (all bets)</div><div class="n" id="m-roi">–</div><div class="s" id="m-roi-s"></div></div>
+    <div class="metric"><div class="l">Edge ROI (5¢)</div><div class="n" id="m-edge">–</div><div class="s" id="m-edge-s"></div></div>
   </div>
 </section>
 
@@ -245,10 +246,22 @@ async function load() {
   $id('ds-line').textContent =
     `${(ds.train || 0) + (ds.test || 0)} markets · ${ds.train || 0} train / ${ds.test || 0} test · ${ds.events || 0} events`;
 
+  // Prefer the tabular champion (XGBoost) — the model actually driving the
+  // live pipeline. Fall back to the LLM offline eval if it's absent.
+  const champ = d.tabular_champion;
   const ev = d.offline_eval || {};
-  const base = ev.implied_baseline, model = ev.grpo_policy;
+  let model, base, label, nEval;
+  if (champ && champ.results && champ.results.accuracy != null) {
+    model = champ.results;
+    base = d.baseline_full || ev.implied_baseline;
+    label = champ.experiment.replace('tabular:', '') + ' champion (live pipeline)';
+    nEval = champ.results.n;
+  } else {
+    model = ev.grpo_policy; base = ev.implied_baseline;
+    label = 'grpo policy'; nEval = ev.n_evaluated;
+  }
   if (base) {
-    $id('eval-n').textContent = `${ev.n_evaluated} held-out markets`;
+    $id('eval-n').textContent = `${nEval} held-out markets · ${label}`;
     const rows = [
       ['acc',  m => pct(m.accuracy)],
       ['prec', m => m.precision == null ? '–' : m.precision.toFixed(2)],
@@ -263,6 +276,15 @@ async function load() {
     }
     if (model && model.trading) {
       $id('m-roi').className = 'n ' + (model.trading.roi >= 0 ? 'pos' : 'neg');
+    }
+    const edge = model && model.edge;
+    if (edge && edge.roi != null) {
+      $id('m-edge').textContent = (edge.roi >= 0 ? '+' : '') + pct(edge.roi);
+      $id('m-edge').className = 'n ' + (edge.roi >= 0 ? 'pos' : 'neg');
+      $id('m-edge-s').textContent =
+        `${edge.n_bets} bets, hit ${pct(edge.hit_rate)} · high variance`;
+    } else {
+      $id('m-edge-s').textContent = 'bet only when model disagrees with price';
     }
   }
 

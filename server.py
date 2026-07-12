@@ -144,12 +144,15 @@ def learning_status() -> dict:
     train = _load("dataset_train.json") or []
     test = _load("dataset_test.json") or []
     log = _load("research_log.json") or []
+    simple_eval = _load("simple_model_eval.json") or {}
     return {
         "dataset": {"train": len(train), "test": len(test),
                     "events": len({e.get("event") for e in train + test})},
         "offline_eval": _load("offline_eval.json"),
+        "tabular_champion": _load("tabular_champion.json"),
+        "baseline_full": simple_eval.get("implied_baseline"),
         "trend_rules": _load("trend_rules.json") or [],
-        "research_log": log[-6:],
+        "research_log": log[-8:],
     }
 
 
