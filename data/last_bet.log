@@ -10,48 +10,40 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 [Phase 1] Kalshi REST API — fetching pure WC markets...
-  59 WC markets total, 18 sent to model.
-    [match_winner] KXWCGAME-26JUL14FRAESP-TIE | Yes=0.3 | Vol=$54,932
-    [match_winner] KXWCGAME-26JUL14FRAESP-FRA | Yes=0.43 | Vol=$295,885
-    [match_winner] KXWCGAME-26JUL14FRAESP-ESP | Yes=0.3 | Vol=$32,667
-    [both_teams_score] KXWCBTTS-26JUL14FRAESP-BTTS | Yes=0.6 | Vol=$124,968
-    [total_goals] KXWCTOTAL-26JUL14FRAESP-6 | Yes=0.06 | Vol=$6,556
-    [total_goals] KXWCTOTAL-26JUL14FRAESP-5 | Yes=0.14 | Vol=$15,751
+  67 WC markets total, 24 sent to model.
+    [match_winner] KXWCGAME-26JUL14FRAESP-TIE | Yes=0.3 | Vol=$114,898
+    [match_winner] KXWCGAME-26JUL14FRAESP-FRA | Yes=0.42 | Vol=$485,080
+    [match_winner] KXWCGAME-26JUL14FRAESP-ESP | Yes=0.3 | Vol=$56,959
+    [match_winner] KXWCGAME-26JUL15ENGARG-TIE | Yes=0.33 | Vol=$27,447
+    [match_winner] KXWCGAME-26JUL15ENGARG-ENG | Yes=0.37 | Vol=$33,566
+    [match_winner] KXWCGAME-26JUL15ENGARG-ARG | Yes=0.31 | Vol=$31,450
 
-[Phase 2A] GRPO policy model (Qwen2.5-1.5B)...
-  [GRPO] Status: fine-tuned
-  [GRPO] Loading Qwen/Qwen2.5-0.5B-Instruct...
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
-Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:01<08:25,  1.75s/it]Loading weights: 100%|██████████| 290/290 [00:01<00:00, 165.18it/s]
-  [GRPO] Loading fine-tuned LoRA adapter...
-  [GRPO] Ready | fine-tuned | device=cpu
-  [GRPO] → Yes | KXWCGAME-26JUL14FRAESP-TIE | $5.00 | conf=30%
+[Phase 2] Tabular champion — scoring all markets for edge...
+  [XGB] → Yes | KXWCGOAL-26JUL14FRAESP-ESPLYAMAL10-1 | $2.37 | conf=61%
+  [XGB] tabular:xgb: P(Yes)=0.61 vs price 0.26 → edge +0.35; Kelly-sized stake
 
-[Phase 2B] Holo model (holo3-1-35b-a3b) — validate / fallback...
-  [Holo] → Yes | KXWCADVANCE-26JUL14FRAESP-FRA | $5.00 | conf=45%
-
-[Decision] source=grpo skip=False
-  → Yes on KXWCGAME-26JUL14FRAESP-TIE
-    [FRA vs ESP] France vs Spain Winner?
-    $5.00 | confidence=30%
+[Decision] source=xgb_edge skip=False
+  → Yes on KXWCGOAL-26JUL14FRAESP-ESPLYAMAL10-1
+    [FRA vs ESP] Lamine Yamal: 1+ goals
+    $2.37 | confidence=61%
 
 [Phase 3] h/web-surfer-flash — placing the bet...
-  [execute] session=d345a9ac-c00c-4c0e-87a5-eebd23a1b82a
-  [execute] watch → https://platform.eu.hcompany.ai/agent-view/d345a9ac-c00c-4c0e-87a5-eebd23a1b82a
+  [execute] session=c705ed24-fdcb-4166-b116-9f96e30dc071
+  [execute] watch → https://platform.eu.hcompany.ai/agent-view/c705ed24-fdcb-4166-b116-9f96e30dc071
   [execute] done — status=idle
-                  Phase 2 — Holo Model Decision                  
-┌────────────┬──────────────────────────────────────────────────┐
-│ Market     │ [FRA vs ESP] France vs Spain Winner?             │
-│ Direction  │ Yes                                              │
-│ Amount     │ $5.00                                            │
-│ Confidence │ 30%                                              │
-│ Reasoning  │ 选择市场M1，因为它有显著的领先优势和较高的价格。 │
-└────────────┴──────────────────────────────────────────────────┘
+                         Phase 2 — Holo Model Decision                          
+┌────────────┬─────────────────────────────────────────────────────────────────┐
+│ Market     │ [FRA vs ESP] Lamine Yamal: 1+ goals                             │
+│ Direction  │ Yes                                                             │
+│ Amount     │ $2.37                                                           │
+│ Confidence │ 61%                                                             │
+│ Reasoning  │ tabular:xgb: P(Yes)=0.61 vs price 0.26 → edge +0.35;            │
+│            │ Kelly-sized stake                                               │
+└────────────┴─────────────────────────────────────────────────────────────────┘
 ╭──────────────────────────── Phase 3 — Execution ─────────────────────────────╮
 │ Bet placed successfully!                                                     │
 │                                                                              │
-│   Filled price : N/A                                                         │
+│   Filled price : 0.26                                                        │
 │   Order ID     : N/A                                                         │
-│   Local bet ID : 2                                                           │
+│   Local bet ID : 3                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────╯

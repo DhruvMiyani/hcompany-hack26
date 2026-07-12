@@ -104,19 +104,22 @@ def bet_watch() -> dict:
     """Parse the running bet log for phase, watch URL, decision and result."""
     import re
     if not BET_LOG.exists():
-        return {"phase": "idle", "watch_url": None, "decision": None, "result": None}
+        return {"phase": "idle", "watch_url": None, "decision": None,
+                "result": None, "engine": None}
     text = BET_LOG.read_text(errors="replace")
-    out = {"phase": "starting", "watch_url": None, "decision": None, "result": None}
+    out = {"phase": "starting", "watch_url": None, "decision": None,
+           "result": None, "engine": None}
     if "Phase 2" in text or "GRPO]" in text:
         out["phase"] = "deciding"
     m = re.search(r"agent-view/([0-9a-f-]+)", text)
     if m:
         out["phase"] = "executing"
         out["watch_url"] = f"https://platform.eu.hcompany.ai/agent-view/{m.group(1)}"
-    m = re.search(r"\[(?:GRPO|XGB)\] → (\w+) \| (\S+) \| \$([\d.]+) \| conf=(\d+)%", text)
+    m = re.search(r"\[(GRPO|XGB)\] → (\w+) \| (\S+) \| \$([\d.]+) \| conf=(\d+)%", text)
     if m:
-        out["decision"] = {"direction": m.group(1), "ticker": m.group(2),
-                           "amount": float(m.group(3)), "confidence": int(m.group(4))}
+        out["engine"] = {"XGB": "XGBoost", "GRPO": "GRPO policy"}[m.group(1)]
+        out["decision"] = {"direction": m.group(2), "ticker": m.group(3),
+                           "amount": float(m.group(4)), "confidence": int(m.group(5))}
     if "placed successfully" in text.lower():
         out["phase"] = "done"; out["result"] = "placed"
     elif "Insufficient funds" in text:

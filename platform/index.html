@@ -463,14 +463,17 @@ async function loadMarkets() {
 /* ── bet pipeline ── */
 let betPoll = null, decisionCard = null;
 
-function showDecision(d, watchUrl) {
+function showDecision(d, watchUrl, engine) {
   const t = $id('thread');
   const div = document.createElement('div'); div.className = 'approval decided';
+  const sub = engine === 'XGBoost'
+    ? 'XGBoost edge model (research-loop champion) · executing via browser'
+    : 'GRPO policy · Holo-validated · executing via browser';
   div.innerHTML = `
     <div class="ap-top">
-      <div class="ap-eyebrow">◆ Model decision</div>
+      <div class="ap-eyebrow">◆ ${engine || 'Model'} decision</div>
       <h4>${d.ticker} — ${d.direction}</h4>
-      <div class="ap-sub">GRPO policy · Holo-validated · executing via browser</div>
+      <div class="ap-sub">${sub}</div>
     </div>
     <dl class="ticket">
       <dt>Side</dt><dd class="side">${d.direction}</dd>
@@ -510,12 +513,12 @@ async function betForMe() {
     try { w = await api('/api/bet-watch'); } catch { return; }
     if (w.phase !== 'starting' && !announced.fetch) {
       announced.fetch = true;
-      addStream('Markets fetched — <b>GRPO model deciding…</b>');
+      addStream('Markets fetched — <b>XGBoost champion scoring for edge…</b> (LLM fallback if none)');
     }
     if (w.decision && !announced.decision) {
       announced.decision = true;
-      showDecision(w.decision, w.watch_url);
-      addStream(`Model decided: <b>${w.decision.direction} ${w.decision.ticker}</b> · $${w.decision.amount.toFixed(2)} · ${w.decision.confidence}% conf`, 'reward');
+      showDecision(w.decision, w.watch_url, w.engine);
+      addStream(`<b>${w.engine || 'Model'}</b> decided: <b>${w.decision.direction} ${w.decision.ticker}</b> · $${w.decision.amount.toFixed(2)} · ${w.decision.confidence}% conf`, 'reward');
     }
     if (w.watch_url && !announced.watch) {
       announced.watch = true;
