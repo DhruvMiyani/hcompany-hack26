@@ -332,8 +332,47 @@ def cmd_refit():
         console.print("[yellow]Refit skipped — check logs.[/yellow]")
 
 
+def cmd_kickoff():
+    """Kick off a standalone H Company browser session and print the watch URL.
+
+      python main.py kickoff          → portfolio check (read-only, no bet)
+      python main.py kickoff scrape   → scrape open FIFA markets
+
+    Fire-and-forget: returns the live watch URL immediately without waiting for
+    the session to finish. Open the URL to watch the browser drive itself.
+    """
+    if not os.getenv("HAI_API_KEY"):
+        console.print("[red]HAI_API_KEY not set in .env[/red]")
+        sys.exit(1)
+
+    from hai_agents import Client
+    from agent.tasks import check_results_task, scrape_markets_task
+    from agent.runner import AGENT_VIEW_HOST, EXECUTE_AGENT
+
+    mode = sys.argv[2] if len(sys.argv) > 2 else "check"
+    url = os.getenv("KALSHI_URL", "https://demo.kalshi.co")
+    email = os.environ["KALSHI_EMAIL"]
+    password = os.environ["KALSHI_PASSWORD"]
+    task = scrape_markets_task(url, email, password) if mode == "scrape" \
+        else check_results_task(url, email, password)
+
+    client = Client(api_key=os.environ["HAI_API_KEY"])
+    session = client.sessions.create_session(agent=EXECUTE_AGENT, messages=task)
+    watch = f"{AGENT_VIEW_HOST}/agent-view/{session.id}"
+
+    console.print(Panel(
+        f"[green]Browser session started[/green]  ({mode})\n\n"
+        f"  Agent   : {EXECUTE_AGENT}\n"
+        f"  Target  : {url}\n"
+        f"  Session : {session.id}\n\n"
+        f"  Watch → [cyan]{watch}[/cyan]",
+        title="Kickoff — Browser Session",
+    ))
+
+
 COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats,
-            "simulate": cmd_simulate, "train": cmd_train, "refit": cmd_refit}
+            "simulate": cmd_simulate, "train": cmd_train, "refit": cmd_refit,
+            "kickoff": cmd_kickoff}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"
