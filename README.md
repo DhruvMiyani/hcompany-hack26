@@ -11,16 +11,25 @@ Self-improving prediction market agent using GRPO (Group Relative Policy Optimiz
 ## Architecture
 
 ```
-Phase 1   Kalshi REST API          →  102 pure KXWC World Cup markets
-Phase 2A  GRPO Model (ours)        →  Qwen2.5-1.5B fine-tuned via GRPO
-Phase 2B  Holo Validator           →  holo3-1-35b-a3b sanity check + fallback
-Phase 3   H Company Browser        →  h/web-surfer-flash executes the bet
+Phase 1    Kalshi REST API         →  pure KXWC World Cup markets + Elo features
+Phase 2·0  Tabular champion (XGB)  →  scores ALL markets, bets edge > 5c (<1s)
+Phase 2A   GRPO Model (fallback)   →  Qwen2.5-0.5B fine-tuned via GRPO
+Phase 2B   Holo Validator          →  holo3-1-35b-a3b sanity check + fallback
+Phase 3    H Company Browser       →  h/web-surfer-flash executes the bet
 ──────────────────────────────────────────────────────────────────────
-After settlement:
-          Reward signal            →  P&L → SQLite
-          GRPO retrain             →  model weights update
-          Reflection               →  new lessons + strategy update
+Offline learning (real settled markets — see ARCHITECTURE.md):
+          build_dataset.py         →  1,425 settled KXWC markets, split by event
+          analyze_trends.py        →  calibration / momentum / category edges
+          research_loop_tabular.py →  {LR, XGBoost} x {±history} — keep iff better
+          research_loop.py         →  GRPO retrain on settled-outcome reward
+After settlement (online):
+          Reward signal            →  P&L → SQLite → reflection → GRPO retrain
 ```
+
+**Current champion (374 held-out real markets):** XGBoost — F1 0.653 vs
+market baseline 0.604; edge strategy (5c margin) +67% ROI over 212 bets
+(high variance, longshot-driven — validate live). Full audit:
+`data/research_log.json`, live view at `/arch`.
 
 ### What GRPO does here
 
@@ -94,8 +103,18 @@ python server.py          # → http://localhost:8080  (deck: /deck)
 # GRPO training dashboard
 python dashboard.py       # → http://localhost:8787
 
-# Test suite — fully offline (no network, no model loads), runs in <1s
+# Test suite — fully offline (no network, no model loads), runs in <2s
 pytest tests/
+
+# ── Offline learning (real settled markets) ──────────────────────
+python build_dataset.py          # settled KXWC markets → train/test (by event)
+python fetch_team_ratings.py     # live Elo for all 48 WC teams
+python fetch_history.py          # WC 2018/2022 pseudo-markets (training only)
+python analyze_trends.py         # calibration/momentum/category edges → rules
+python train_simple_model.py     # logistic regression vs implied-price baseline
+python research_loop_tabular.py --metric f1        # {LR,XGB} x {±history}, seconds
+python research_loop.py --metric f1 --n 40         # GRPO retrain loop, ~1-3h
+python offline_eval.py 60        # grade the LLM policy on held-out markets
 ```
 
 ---
@@ -105,19 +124,25 @@ pytest tests/
 ```
 agent/
   kalshi_api.py     Phase 1 — discovers KXWC events from parlay legs,
-                    fetches 102 pure WC markets via event_ticker
-  grpo_model.py     Phase 2A — Qwen2.5-1.5B + LoRA, GRPO trainer,
-                    saves/loads adapter weights to data/grpo_weights/
-  decision.py       Phase 2B — Holo model via OpenAI-compatible API,
-                    structured JSON output, fallback + sanity check
+                    fetches WC markets (price, momentum, OI, outcome label)
+  tabular_policy.py Phase 2·0 — research-loop champion picks market +
+                    direction + Kelly stake from edge vs price
+  grpo_model.py     Phase 2A — Qwen2.5-0.5B + LoRA, GRPO trainer
+                    (train() accepts custom reward_fn)
+  decision.py       Phase 2B — Holo model via OpenAI-compatible API
+  policy_prompt.py  Shared prompt (short market ids) + completion scoring
+  dataset.py        Real settled-market dataset + sibling/Elo features
+  simple_model.py   Logistic regression + XGBoost + edge strategy
+  metrics.py        accuracy / precision / recall / F1 / ROI
   reward.py         Reward shaping: P&L + calibration + Kelly sizing
-  simulator.py      Synthetic training data (Monte Carlo on market prices)
-                    for GRPO cold start before real bets settle
-  runner.py         Orchestrates phases 1→2A→2B→3, ensemble logic
+  simulator.py      Synthetic cold-start data (superseded by real data)
+  runner.py         Orchestrates phases 1→2·0→2A→2B→3
   tasks.py          Prompt templates for H Company browser agents
   memory.py         SQLite — bets, lessons, strategy tables
   reflection.py     Post-settlement: Holo reads outcomes → new lessons
 main.py             CLI entry point: bet | simulate | check | stats
+server.py           Platform backend (control panel, command center, /arch)
+ARCHITECTURE.md     Written analysis: strengths, weaknesses, learning loops
 data/
   agent_memory.db   SQLite (git-ignored)
   grpo_weights/     checkpoints git-ignored, but the latest trained
