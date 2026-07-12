@@ -50,11 +50,19 @@ def run_full_bet_cycle(
     Phase 3 — h/web-surfer-flash → places the bet
     """
     # ── Phase 1: Kalshi API ──────────────────────────────────────────────────
-    print("\n[Phase 1] Fetching open FIFA markets via Kalshi API...", file=sys.stderr)
-    markets = get_open_wc_markets()
-    print(f"  Found {len(markets)} soccer market(s).", file=sys.stderr)
-    for m in markets[:5]:
-        print(f"    {m.name[:60]} | Yes={m.yes_price} No={m.no_price}", file=sys.stderr)
+    print("\n[Phase 1] Fetching pure FIFA World Cup markets via Kalshi API...", file=sys.stderr)
+    all_markets = get_open_wc_markets()
+    # Prioritise liquid markets — top 20 by volume, always include match_winner + advance
+    priority = [m for m in all_markets if m.category in ("match_winner", "advance", "both_teams_score", "total_goals")]
+    others = sorted(
+        [m for m in all_markets if m not in priority and (m.volume or 0) > 50_000],
+        key=lambda m: -(m.volume or 0),
+    )[:6]
+    markets = priority + others
+    print(f"  {len(all_markets)} WC markets found, {len(markets)} passed to model.", file=sys.stderr)
+    for m in markets[:6]:
+        print(f"    [{m.category}] {m.name[:55]} | Yes={m.yes_price} Vol=${m.volume:,.0f}" if m.volume else
+              f"    [{m.category}] {m.name[:55]} | Yes={m.yes_price}", file=sys.stderr)
 
     # ── Phase 2: Holo model decides ──────────────────────────────────────────
     print("\n[Phase 2] Holo model deciding which bet to place...", file=sys.stderr)

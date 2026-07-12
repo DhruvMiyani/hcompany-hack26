@@ -185,4 +185,8 @@ Return a single JSON object matching this schema:
     elif "```" in content:
         content = content.split("```")[1].split("```")[0].strip()
 
-    return BetDecision.model_validate_json(content)
+    decision = BetDecision.model_validate_json(content)
+    # Normalise confidence: model sometimes returns 0-100 instead of 0.0-1.0
+    if decision.confidence > 1.0:
+        decision.confidence = round(decision.confidence / 100.0, 3)
+    return decision
