@@ -2,9 +2,11 @@
 """
 Self-improving Kalshi FIFA betting agent — powered by H Company browser automation.
 
-  python main.py bet     — scrape → decide → execute (full pipeline)
-  python main.py check   — check portfolio outcomes + self-improve
-  python main.py stats   — performance history and current strategy
+  python main.py bet       — API fetch → GRPO decide → Holo validate → browser execute
+  python main.py simulate  — generate synthetic data + GRPO cold-start training
+  python main.py train     — retrain GRPO on real resolved bet outcomes
+  python main.py check     — check portfolio + reflection + GRPO retrain
+  python main.py stats     — performance history and current strategy
 """
 
 import os
@@ -37,14 +39,17 @@ def cmd_bet():
     strategy = memory.get_latest_strategy()
     lessons = memory.get_active_lessons()
 
+    from agent.grpo_model import get_model as get_grpo
+    grpo_status = "fine-tuned ✓" if get_grpo().is_trained else "base (run simulate first)"
     console.print(Panel(
-        f"[bold cyan]Three-phase betting pipeline[/bold cyan]\n\n"
-        f"  Phase 1  Browser scrapes open FIFA markets from demo.kalshi.co\n"
-        f"  Phase 2  Holo model decides which bet to place\n"
-        f"  Phase 3  Browser executes the specific bet\n\n"
+        f"[bold cyan]Self-improving two-model pipeline[/bold cyan]\n\n"
+        f"  Phase 1   Kalshi REST API  →  pure KXWC WC markets\n"
+        f"  Phase 2A  GRPO Model       →  Qwen2.5-1.5B [{grpo_status}]\n"
+        f"  Phase 2B  Holo Validator   →  holo3-1-35b-a3b sanity check\n"
+        f"  Phase 3   H Company        →  h/web-surfer-flash executes\n\n"
         f"Target: [green]{os.getenv('KALSHI_URL')}[/green]  |  "
         f"Max bet: [green]${max_amount:.2f}[/green]  |  "
-        f"Lessons so far: {len(lessons)}",
+        f"Lessons: {len(lessons)}",
         title="Kalshi FIFA Agent",
     ))
 
@@ -209,7 +214,85 @@ def _markets_match(a: str, b: str) -> bool:
     return len(wa & wb) / max(len(wa | wb), 1) > 0.6
 
 
-COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats}
+def cmd_simulate():
+    """Generate synthetic GRPO training data + run initial fine-tuning."""
+    memory.init_db()
+    strategy = memory.get_latest_strategy()
+
+    console.print(Panel(
+        "[bold cyan]GRPO Cold Start[/bold cyan]\n\n"
+        "  1. Fetch live WC markets from Kalshi API\n"
+        "  2. Monte Carlo simulate 300 bet outcomes\n"
+        "  3. Fine-tune Qwen2.5-1.5B with GRPO on simulated P&L rewards\n\n"
+        "[dim]First run downloads ~3GB model — takes a few minutes[/dim]",
+        title="GRPO Simulator",
+    ))
+
+    from agent.kalshi_api import get_open_wc_markets
+    from agent.simulator import generate_trajectories
+    from agent.grpo_model import get_model
+
+    console.print("\n[cyan]Fetching live Kalshi WC markets...[/cyan]")
+    markets = get_open_wc_markets()
+    console.print(f"  {len(markets)} markets fetched")
+
+    console.print("\n[cyan]Generating 300 synthetic trajectories...[/cyan]")
+    trajectories = generate_trajectories(markets, strategy, n=300)
+    wins = sum(1 for t in trajectories if t["won"])
+    avg_reward = sum(t["reward"] for t in trajectories) / len(trajectories)
+    console.print(f"  Simulated: {len(trajectories)} | Win rate: {wins/len(trajectories):.0%} | Avg reward: {avg_reward:.3f}")
+
+    console.print("\n[cyan]Running GRPO fine-tuning on Qwen2.5-1.5B...[/cyan]")
+    grpo = get_model()
+    trained = grpo.train(trajectories)
+
+    if trained:
+        console.print(Panel(
+            "[green]GRPO training complete![/green]\n\n"
+            f"  Model: Qwen2.5-1.5B + LoRA adapter\n"
+            f"  Trajectories: {len(trajectories)}\n"
+            f"  Weights saved: data/grpo_weights/adapter/\n\n"
+            "Run [bold]python main.py bet[/bold] — GRPO model is now Phase 2A",
+            title="Training Complete",
+        ))
+    else:
+        console.print("[yellow]Training skipped — check logs above.[/yellow]")
+
+
+def cmd_train():
+    """Retrain GRPO on actual resolved bet outcomes from SQLite."""
+    memory.init_db()
+    resolved = memory.get_resolved_bets(limit=50)
+
+    if not resolved:
+        console.print("[yellow]No resolved bets yet. Run 'check' after markets settle.[/yellow]")
+        return
+
+    from agent.grpo_model import get_model
+    from agent.reward import compute_reward
+    from agent.kalshi_api import get_open_wc_markets
+    from agent.simulator import _build_prompt
+
+    strategy = memory.get_latest_strategy()
+    markets  = get_open_wc_markets()
+    prompt   = _build_prompt(markets[:12], strategy)
+
+    trajectories = []
+    for bet in resolved:
+        reward = compute_reward(
+            decision={"direction": bet["direction"], "amount": bet["amount"],
+                      "confidence": 0.5, "volume": None},
+            outcome={"status": bet["status"], "profit_loss": bet.get("profit_loss", 0)},
+        )
+        trajectories.append({"prompt": prompt, "reward": reward})
+
+    console.print(f"\n[cyan]Retraining GRPO on {len(trajectories)} real bet outcomes...[/cyan]")
+    grpo = get_model()
+    grpo.train(trajectories)
+
+
+COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats,
+            "simulate": cmd_simulate, "train": cmd_train}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"
