@@ -30,7 +30,6 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 UI_FILE = ROOT / "platform" / "control.html"      # simple control panel (default)
 DECK_FILE = ROOT / "platform" / "index.html"      # full Tandem deck
 
@@ -202,6 +201,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     print(f"Tandem platform → http://localhost:{PORT}")
     print(f"  UI: {UI_FILE}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

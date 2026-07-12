@@ -93,6 +93,9 @@ python server.py          # → http://localhost:8080  (deck: /deck)
 
 # GRPO training dashboard
 python dashboard.py       # → http://localhost:8787
+
+# Test suite — fully offline (no network, no model loads), runs in <1s
+pytest tests/
 ```
 
 ---
