@@ -198,5 +198,205 @@
         "coverage": 0.775
       }
     }
+  },
+  {
+    "time": "2026-07-12T18:52:22+00:00",
+    "experiment": "champion_baseline",
+    "metric": "f1",
+    "score": 0.4878,
+    "baseline_f1": 0.5333,
+    "kept": true,
+    "results": {
+      "n_evaluated": 40,
+      "implied_baseline": {
+        "n": 40,
+        "accuracy": 0.825,
+        "precision": 1.0,
+        "recall": 0.3636,
+        "f1": 0.5333,
+        "confusion": {
+          "tp": 4,
+          "tn": 29,
+          "fp": 0,
+          "fn": 7
+        },
+        "trading": {
+          "n_bets": 40,
+          "hit_rate": 0.825,
+          "pnl": 4.12,
+          "roi": 0.103
+        }
+      },
+      "grpo_policy": {
+        "n": 31,
+        "accuracy": 0.3226,
+        "precision": 0.3333,
+        "recall": 0.9091,
+        "f1": 0.4878,
+        "confusion": {
+          "tp": 10,
+          "tn": 0,
+          "fp": 20,
+          "fn": 1
+        },
+        "trading": {
+          "n_bets": 31,
+          "hit_rate": 0.3226,
+          "pnl": -0.04,
+          "roi": -0.0013
+        },
+        "coverage": 0.775
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T18:53:50+00:00",
+    "experiment": "trend_rules",
+    "metric": "f1",
+    "score": 0.5,
+    "baseline_f1": 0.5333,
+    "kept": true,
+    "results": {
+      "n_evaluated": 40,
+      "implied_baseline": {
+        "n": 40,
+        "accuracy": 0.825,
+        "precision": 1.0,
+        "recall": 0.3636,
+        "f1": 0.5333,
+        "confusion": {
+          "tp": 4,
+          "tn": 29,
+          "fp": 0,
+          "fn": 7
+        },
+        "trading": {
+          "n_bets": 40,
+          "hit_rate": 0.825,
+          "pnl": 4.12,
+          "roi": 0.103
+        }
+      },
+      "grpo_policy": {
+        "n": 30,
+        "accuracy": 0.3333,
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "confusion": {
+          "tp": 10,
+          "tn": 0,
+          "fp": 20,
+          "fn": 0
+        },
+        "trading": {
+          "n_bets": 30,
+          "hit_rate": 0.3333,
+          "pnl": 0.35,
+          "roi": 0.0116
+        },
+        "coverage": 0.75
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T19:13:38+00:00",
+    "experiment": "champion_baseline",
+    "metric": "f1",
+    "score": 0.4878,
+    "baseline_f1": 0.5333,
+    "kept": true,
+    "results": {
+      "n_evaluated": 40,
+      "implied_baseline": {
+        "n": 40,
+        "accuracy": 0.825,
+        "precision": 1.0,
+        "recall": 0.3636,
+        "f1": 0.5333,
+        "confusion": {
+          "tp": 4,
+          "tn": 29,
+          "fp": 0,
+          "fn": 7
+        },
+        "trading": {
+          "n_bets": 40,
+          "hit_rate": 0.825,
+          "pnl": 4.12,
+          "roi": 0.103
+        }
+      },
+      "grpo_policy": {
+        "n": 31,
+        "accuracy": 0.3226,
+        "precision": 0.3333,
+        "recall": 0.9091,
+        "f1": 0.4878,
+        "confusion": {
+          "tp": 10,
+          "tn": 0,
+          "fp": 20,
+          "fn": 1
+        },
+        "trading": {
+          "n_bets": 31,
+          "hit_rate": 0.3226,
+          "pnl": -0.04,
+          "roi": -0.0013
+        },
+        "coverage": 0.775
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T19:15:07+00:00",
+    "experiment": "trend_rules",
+    "metric": "f1",
+    "score": 0.5,
+    "baseline_f1": 0.5333,
+    "kept": true,
+    "results": {
+      "n_evaluated": 40,
+      "implied_baseline": {
+        "n": 40,
+        "accuracy": 0.825,
+        "precision": 1.0,
+        "recall": 0.3636,
+        "f1": 0.5333,
+        "confusion": {
+          "tp": 4,
+          "tn": 29,
+          "fp": 0,
+          "fn": 7
+        },
+        "trading": {
+          "n_bets": 40,
+          "hit_rate": 0.825,
+          "pnl": 4.12,
+          "roi": 0.103
+        }
+      },
+      "grpo_policy": {
+        "n": 30,
+        "accuracy": 0.3333,
+        "precision": 0.3333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "confusion": {
+          "tp": 10,
+          "tn": 0,
+          "fp": 20,
+          "fn": 0
+        },
+        "trading": {
+          "n_bets": 30,
+          "hit_rate": 0.3333,
+          "pnl": 0.35,
+          "roi": 0.0116
+        },
+        "coverage": 0.75
+      }
+    }
   }
 ]

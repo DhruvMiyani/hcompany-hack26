@@ -1,0 +1,40 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+=== experiment: champion_baseline ===
+Test set: 374 markets, evaluating on 40
+
+implied-price baseline: acc 82.50% | precision 1.0 | recall 0.3636 | F1 0.5333 | ROI +10.30%
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:01<05:22,  1.12s/it]Loading weights: 100%|██████████| 290/290 [00:01<00:00, 251.15it/s]
+  10/40 markets predicted
+  20/40 markets predicted
+  40/40 markets predicted
+grpo policy (78% coverage): acc 32.26% | precision 0.3333 | recall 0.9091 | F1 0.4878 | ROI -0.13%
+
+Saved → data/offline_eval.json
+  → new champion: champion_baseline (f1=0.4878)
+
+=== experiment: trend_rules ===
+Test set: 374 markets, evaluating on 40
+
+implied-price baseline: acc 82.50% | precision 1.0 | recall 0.3636 | F1 0.5333 | ROI +10.30%
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:01<06:58,  1.45s/it]Loading weights: 100%|██████████| 290/290 [00:01<00:00, 199.75it/s]
+  [GRPO] Loading Qwen/Qwen2.5-0.5B-Instruct...
+  10/40 markets predicted
+  20/40 markets predicted
+  40/40 markets predicted
+grpo policy (75% coverage): acc 33.33% | precision 0.3333 | recall 1.0 | F1 0.5 | ROI +1.16%
+
+Saved → data/offline_eval.json
+  → new champion: trend_rules (f1=0.5)
+
+=== experiment: retrained_adapter ===
+  retraining GRPO on 1051 real trajectories (settled-outcome reward)...
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:01<06:16,  1.30s/it]Loading weights: 100%|██████████| 290/290 [00:01<00:00, 221.85it/s]
+  [GRPO] Loading fine-tuned LoRA adapter...
+  [GRPO] Ready | fine-tuned | device=mps
+
+  [GRPO] Fine-tuning on 800 trajectories (G=4, max 200 steps)...
+[transformers] The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'bos_token_id': None, 'pad_token_id': 151643}.
+  0%|          | 0/200 [00:00<?, ?it/s]  0%|          | 1/200 [00:16<54:45, 16.51s/it]  1%|          | 2/200 [01:06<1:59:04, 36.09s/it]  2%|▏         | 3/200 [02:00<2:25:12, 44.22s/it]  2%|▏         | 4/200 [03:02<2:48:20, 51.53s/it]  2%|▎         | 5/200 [04:02<2:56:40, 54.36s/it]                                                   2%|▎         | 5/200 [04:04<2:56:40, 54.36s/it]  3%|▎         | 6/200 [05:05<3:05:45, 57.45s/it]  4%|▎         | 7/200 [06:19<3:21:47, 62.73s/it]  4%|▍         | 8/200 [07:22<3:21:25, 62.95s/it]  4%|▍         | 9/200 [08:31<3:26:15, 64.79s/it]  5%|▌         | 10/200 [09:45<3:33:43, 67.49s/it]                                                    5%|▌         | 10/200 [09:47<3:33:43, 67.49s/it]  6%|▌         | 11/200 [10:44<3:24:46, 65.01s/it]  6%|▌         | 12/200 [11:52<3:26:45, 65.99s/it]  6%|▋         | 13/200 [12:59<3:26:37, 66.30s/it]  7%|▋         | 14/200 [14:06<3:25:36, 66.32s/it]  8%|▊         | 15/200 [15:18<3:29:37, 67.99s/it]                                                    8%|▊         | 15/200 [15:20<3:29:37, 67.99s/it]  8%|▊         | 16/200 [16:21<3:24:46, 66.77s/it]  8%|▊         | 17/200 [17:32<3:27:02, 67.88s/it]/opt/homebrew/Cellar/python@3.10/3.10.19_1/Frameworks/Python.framework/Versions/3.10/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

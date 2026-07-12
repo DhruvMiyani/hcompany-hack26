@@ -128,10 +128,36 @@ def split_by_event(examples: list[dict],
     return train, test
 
 
+def enrich(examples: list[dict]) -> list[dict]:
+    """Add derived features from sibling markets (same event + category).
+
+    A 3-way winner event has three markets whose prices should sum to ~1.
+    Where they don't, something is mispriced — and being the favorite (or a
+    distant longshot) inside your own event is signal the raw price alone
+    doesn't carry.
+    """
+    groups: dict[tuple, list[dict]] = {}
+    for ex in examples:
+        groups.setdefault((ex["event"], ex["category"]), []).append(ex)
+
+    for group in groups.values():
+        prices = sorted((e["yes_price_4h"] for e in group), reverse=True)
+        implied_sum = sum(prices)
+        for e in group:
+            p = e["yes_price_4h"]
+            e["n_outcomes"] = len(group)
+            e["implied_sum"] = round(implied_sum, 4)
+            e["price_share"] = round(p / implied_sum, 4) if implied_sum else 0.0
+            e["price_rank"] = prices.index(p) + 1
+            e["is_favorite"] = 1 if e["price_rank"] == 1 else 0
+            e["fav_gap"] = round(prices[0] - p, 4)
+    return examples
+
+
 def load_dataset() -> tuple[list[dict], list[dict]]:
     train = json.loads(TRAIN_PATH.read_text()) if TRAIN_PATH.exists() else []
     test = json.loads(TEST_PATH.read_text()) if TEST_PATH.exists() else []
-    return train, test
+    return enrich(train), enrich(test)
 
 
 def build_and_save(max_per_series: int = 400, log=print) -> tuple[int, int]:

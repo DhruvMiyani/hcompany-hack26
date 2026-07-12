@@ -1,0 +1,39 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+=== experiment: champion_baseline ===
+Test set: 374 markets, evaluating on 40
+
+implied-price baseline: acc 82.50% | precision 1.0 | recall 0.3636 | F1 0.5333 | ROI +10.30%
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<01:55,  2.49it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 715.56it/s]
+  10/40 markets predicted
+  20/40 markets predicted
+  40/40 markets predicted
+grpo policy (78% coverage): acc 32.26% | precision 0.3333 | recall 0.9091 | F1 0.4878 | ROI -0.13%
+
+Saved → data/offline_eval.json
+  → new champion: champion_baseline (f1=0.4878)
+
+=== experiment: trend_rules ===
+Test set: 374 markets, evaluating on 40
+
+implied-price baseline: acc 82.50% | precision 1.0 | recall 0.3636 | F1 0.5333 | ROI +10.30%
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<01:48,  2.67it/s]Loading weights:  96%|█████████▌| 279/290 [00:00<00:00, 762.51it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 587.18it/s]
+  [GRPO] Loading Qwen/Qwen2.5-0.5B-Instruct...
+  10/40 markets predicted
+  20/40 markets predicted
+  40/40 markets predicted
+grpo policy (75% coverage): acc 33.33% | precision 0.3333 | recall 1.0 | F1 0.5 | ROI +1.16%
+
+Saved → data/offline_eval.json
+  → new champion: trend_rules (f1=0.5)
+
+=== experiment: retrained_adapter ===
+  retraining GRPO on 1051 real trajectories (settled-outcome reward)...
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]Loading weights:   0%|          | 1/290 [00:00<04:12,  1.14it/s]Loading weights: 100%|██████████| 290/290 [00:00<00:00, 326.09it/s]
+  [GRPO] Loading fine-tuned LoRA adapter...
+  [GRPO] Ready | fine-tuned | device=mps
+
+  [GRPO] Fine-tuning on 240 trajectories (G=4, max 60 steps)...
+[transformers] The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'bos_token_id': None, 'pad_token_id': 151643}.
+  0%|          | 0/60 [00:00<?, ?it/s]  2%|▏         | 1/60 [00:12<12:09, 12.36s/it]  3%|▎         | 2/60 [01:00<32:26, 33.56s/it]  5%|▌         | 3/60 [02:02<44:04, 46.40s/it]  7%|▋         | 4/60 [03:07<50:20, 53.93s/it]  8%|▊         | 5/60 [04:18<55:00, 60.01s/it]                                                8%|▊         | 5/60 [04:21<55:00, 60.01s/it]
