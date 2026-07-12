@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Betting Agent — Control</title>
+<style>
+  :root {
+    --bg:#0b0e14; --card:#141924; --card2:#1a202e; --border:#252c3a;
+    --fg:#e7ecf3; --dim:#8a94a6; --accent:#4ade80; --accentd:#16a34a;
+    --blue:#5aa2ff; --amber:#f0b429; --red:#f8664e; --learn:#a78bfa;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--fg);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,'SF Pro',Segoe UI,sans-serif;
+    padding:2rem 1rem; }
+  .wrap { max-width:720px; margin:0 auto; }
+  header { display:flex; align-items:center; gap:.7rem; margin-bottom:.35rem; }
+  header .dot { width:9px; height:9px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 4px rgba(74,222,128,.15); }
+  h1 { font-size:1.35rem; font-weight:650; }
+  .sub { color:var(--dim); font-size:.88rem; margin-bottom:1.5rem; }
+
+  .status { display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem; margin-bottom:1.5rem; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:.75rem .85rem; }
+  .stat .k { color:var(--dim); font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:1.25rem; font-weight:650; font-variant-numeric:tabular-nums; margin-top:.15rem; }
+  .v.pos { color:var(--accent); } .v.neg { color:var(--red); }
+
+  .actions { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1.5rem; }
+  button { font:inherit; font-weight:600; border:none; border-radius:11px; padding:1rem;
+    cursor:pointer; color:var(--fg); background:var(--card2); border:1px solid var(--border);
+    display:flex; flex-direction:column; gap:.2rem; align-items:flex-start; text-align:left;
+    transition:transform .05s, border-color .15s, background .15s; }
+  button:hover { border-color:#3a475c; background:#1e2635; }
+  button:active { transform:translateY(1px); }
+  button:disabled { opacity:.55; cursor:default; }
+  button .big { font-size:1.02rem; }
+  button .small { font-size:.76rem; color:var(--dim); font-weight:500; }
+  button.primary { grid-column:1 / -1; background:linear-gradient(180deg,#1c7a44,#15612f);
+    border-color:#1f8a4c; }
+  button.primary:hover { background:linear-gradient(180deg,#1f8a4c,#177036); }
+  button.primary .small { color:#bff2d0; }
+
+  .log { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem 1.15rem;
+    min-height:120px; }
+  .log h2 { font-size:.72rem; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); margin-bottom:.6rem; }
+  .row { display:flex; gap:.6rem; padding:.4rem 0; border-top:1px solid var(--border); font-size:.9rem; }
+  .row:first-of-type { border-top:none; }
+  .row .t { color:var(--dim); font-variant-numeric:tabular-nums; font-size:.8rem; white-space:nowrap; }
+  .row a { color:var(--blue); text-decoration:none; } .row a:hover { text-decoration:underline; }
+  .tag { font-size:.68rem; padding:.05rem .4rem; border-radius:5px; font-weight:600; }
+  .tag.ok { background:rgba(74,222,128,.16); color:var(--accent); }
+  .tag.run { background:rgba(90,162,255,.16); color:var(--blue); }
+  .tag.warn { background:rgba(240,180,41,.16); color:var(--amber); }
+  .tag.err { background:rgba(248,102,78,.16); color:var(--red); }
+  footer { margin-top:1.5rem; display:flex; gap:1.25rem; font-size:.83rem; }
+  footer a { color:var(--dim); text-decoration:none; } footer a:hover { color:var(--fg); }
+  .modelbar { font-size:.82rem; color:var(--dim); margin-bottom:1.25rem; display:flex; gap:.5rem; align-items:center; }
+  .modelbar .badge { padding:.1rem .45rem; border-radius:6px; font-weight:600; font-size:.75rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="dot"></span><h1>Betting Agent — Control</h1></header>
+  <div class="sub">FIFA World Cup prediction markets · demo.kalshi.co · one click per action</div>
+
+  <div class="modelbar">
+    <span>Policy:</span><span id="model-badge" class="badge tag run">checking…</span>
+    <span id="model-note"></span>
+  </div>
+
+  <div class="status">
+    <div class="stat"><div class="k">Bets</div><div class="v" id="s-bets">–</div></div>
+    <div class="stat"><div class="k">Win rate</div><div class="v" id="s-wr">–</div></div>
+    <div class="stat"><div class="k">Net P&amp;L</div><div class="v" id="s-pnl">–</div></div>
+    <div class="stat"><div class="k">Wagered</div><div class="v" id="s-wag">–</div></div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="b-bet" onclick="placeBet()">
+      <span class="big">▶  Place a bet</span>
+      <span class="small">Full pipeline: fetch markets → model decides → browser places it. No approval needed.</span>
+    </button>
+    <button id="b-fund" onclick="act('/api/fund?amount=100','POST','Add funds')">
+      <span class="big">＋ Add demo funds</span>
+      <span class="small">Browser tops up demo balance to $100</span>
+    </button>
+    <button id="b-check" onclick="act('/api/kickoff?mode=check','POST','Check portfolio')">
+      <span class="big">▤ Check portfolio</span>
+      <span class="small">Browser reads open positions</span>
+    </button>
+    <button id="b-scrape" onclick="act('/api/kickoff?mode=scrape','POST','Scrape markets')">
+      <span class="big">📈 Scrape markets</span>
+      <span class="small">Browser lists open FIFA markets</span>
+    </button>
+    <button id="b-refresh" onclick="loadStats()">
+      <span class="big">↻ Refresh stats</span>
+      <span class="small">Pull latest bets &amp; P&amp;L</span>
+    </button>
+  </div>
+
+  <div class="log">
+    <h2>Activity</h2>
+    <div id="log"></div>
+  </div>
+
+  <footer>
+    <a href="http://localhost:8787" target="_blank">GRPO training dashboard →</a>
+    <a href="/deck" target="_blank">Full command center →</a>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function now() { const d = new Date(); return d.toTimeString().slice(0,8); }
+function log(html, tag) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<span class="t">${now()}</span>`
+    + (tag ? `<span class="tag ${tag[0]}">${tag[1]}</span>` : '')
+    + `<span>${html}</span>`;
+  $('log').prepend(row);
+}
+async function api(path, method='GET') {
+  const r = await fetch(path, { method });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+async function act(path, method, label) {
+  log(`${label}…`, ['run','start']);
+  try {
+    const r = await api(path, method);
+    if (r.watch_url) {
+      log(`${label} — <a href="${r.watch_url}" target="_blank">watch the browser live →</a>`, ['ok','browser']);
+      window.open(r.watch_url, '_blank');
+    } else {
+      log(`${label} started.`, ['ok','ok']);
+    }
+  } catch (e) {
+    log(`${label} failed: ${e.message}`, ['err','error']);
+  }
+}
+
+let betPoll = null;
+async function placeBet() {
+  const btn = $('b-bet'); btn.disabled = true;
+  log('Placing a bet — running the full pipeline…', ['run','pipeline']);
+  try {
+    await api('/api/bet', 'POST');
+    clearInterval(betPoll);
+    let announced = {};
+    betPoll = setInterval(async () => {
+      let w;
+      try { w = await api('/api/bet-watch'); } catch { return; }
+      if (w.decision && !announced.decision) {
+        announced.decision = true;
+        const d = w.decision;
+        log(`Model decided: <b>${d.direction}</b> on ${d.ticker} · $${d.amount.toFixed(2)} · ${d.confidence}% conf`, ['ok','decision']);
+      }
+      if (w.watch_url && !announced.watch) {
+        announced.watch = true;
+        log(`Browser placing the bet — <a href="${w.watch_url}" target="_blank">watch live →</a>`, ['run','browser']);
+        window.open(w.watch_url, '_blank');
+      }
+      if (w.phase === 'done') {
+        clearInterval(betPoll); btn.disabled = false;
+        if (w.result === 'placed') log('Bet placed successfully.', ['ok','done']);
+        else if (w.result === 'insufficient_funds') log('Bet rejected — insufficient demo funds. Click “Add demo funds” first.', ['warn','funds']);
+        else log('Execution failed — see console/log.', ['err','failed']);
+        loadStats();
+      }
+    }, 3000);
+  } catch (e) {
+    log(`Could not start the pipeline: ${e.message}`, ['err','error']);
+    btn.disabled = false;
+  }
+}
+
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    $('s-bets').textContent = s.total_bets;
+    $('s-wr').textContent = s.win_rate == null ? '–' : Math.round(s.win_rate*100) + '%';
+    const pnl = $('s-pnl');
+    pnl.textContent = (s.pnl >= 0 ? '+$' : '-$') + Math.abs(s.pnl).toFixed(2);
+    pnl.className = 'v ' + (s.pnl >= 0 ? 'pos' : 'neg');
+    $('s-wag').textContent = '$' + s.wagered.toFixed(2);
+  } catch (e) { log('Backend offline — run: python server.py', ['err','offline']); }
+}
+async function loadModel() {
+  try {
+    const m = await api('/api/model');
+    const b = $('model-badge');
+    b.textContent = m.trained ? 'GRPO live' : 'base (untrained)';
+    b.className = 'badge tag ' + (m.trained ? 'ok' : 'warn');
+    $('model-note').textContent = m.base;
+  } catch (e) {}
+}
+
+loadStats(); loadModel();
+setInterval(loadStats, 15000);
+</script>
+</body>
+</html>

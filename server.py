@@ -30,7 +30,8 @@ ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-UI_FILE = ROOT / "platform" / "index.html"
+UI_FILE = ROOT / "platform" / "control.html"      # simple control panel (default)
+DECK_FILE = ROOT / "platform" / "index.html"      # full Tandem deck
 
 
 def _kalshi():
@@ -86,14 +87,42 @@ def model_status() -> dict:
             "adapter_present": trained}
 
 
+BET_LOG = ROOT / "data" / "last_bet.log"
+
+
 def run_bet_async() -> dict:
-    """Launch the full bet pipeline detached; UI polls /api/stats for the result."""
+    """Launch the full bet pipeline detached; UI polls /api/bet-watch for progress."""
     env = dict(os.environ, GRPO_DEVICE="cpu")
-    log = ROOT / "data" / "last_bet.log"
-    with open(log, "w") as fh:
+    with open(BET_LOG, "w") as fh:
         subprocess.Popen([sys.executable, str(ROOT / "main.py"), "bet"],
                          cwd=str(ROOT), env=env, stdout=fh, stderr=subprocess.STDOUT)
-    return {"started": True, "log": str(log)}
+    return {"started": True}
+
+
+def bet_watch() -> dict:
+    """Parse the running bet log for phase, watch URL, decision and result."""
+    import re
+    if not BET_LOG.exists():
+        return {"phase": "idle", "watch_url": None, "decision": None, "result": None}
+    text = BET_LOG.read_text(errors="replace")
+    out = {"phase": "starting", "watch_url": None, "decision": None, "result": None}
+    if "Phase 2" in text or "GRPO]" in text:
+        out["phase"] = "deciding"
+    m = re.search(r"agent-view/([0-9a-f-]+)", text)
+    if m:
+        out["phase"] = "executing"
+        out["watch_url"] = f"https://platform.eu.hcompany.ai/agent-view/{m.group(1)}"
+    m = re.search(r"\[GRPO\] → (\w+) \| (\S+) \| \$([\d.]+) \| conf=(\d+)%", text)
+    if m:
+        out["decision"] = {"direction": m.group(1), "ticker": m.group(2),
+                           "amount": float(m.group(3)), "confidence": int(m.group(4))}
+    if "placed successfully" in text.lower():
+        out["phase"] = "done"; out["result"] = "placed"
+    elif "Insufficient funds" in text:
+        out["phase"] = "done"; out["result"] = "insufficient_funds"
+    elif "Execution failed" in text:
+        out["phase"] = "done"; out["result"] = "failed"
+    return out
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -108,19 +137,26 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _html(self, html):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(html.encode())
+
     def do_GET(self):
         path = urlparse(self.path).path
         try:
-            if path in ("/", "/index.html"):
-                html = UI_FILE.read_text()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html")
-                self.end_headers()
-                self.wfile.write(html.encode())
+            if path in ("/", "/control", "/control.html"):
+                self._html(UI_FILE.read_text())
+            elif path in ("/deck", "/index.html"):
+                self._html(DECK_FILE.read_text())
             elif path == "/api/stats":
                 self._json(stats())
             elif path == "/api/model":
                 self._json(model_status())
+            elif path == "/api/bet-watch":
+                self._json(bet_watch())
             else:
                 self._json({"error": "not found"}, 404)
         except Exception as e:
