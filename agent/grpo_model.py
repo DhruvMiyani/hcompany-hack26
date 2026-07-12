@@ -40,6 +40,10 @@ MAX_TRAIN_STEPS = int(os.getenv("GRPO_MAX_STEPS", "40"))
 
 def _device():
     import torch
+    # GRPO_DEVICE lets inference run on CPU while a training run holds the GPU.
+    override = os.getenv("GRPO_DEVICE", "").strip().lower()
+    if override in ("cpu", "mps", "cuda"):
+        return override
     if torch.backends.mps.is_available():
         return "mps"
     if torch.cuda.is_available():

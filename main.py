@@ -85,7 +85,7 @@ def cmd_bet():
     exec_info = result.get("execution") or {}
     if exec_info.get("success"):
         bet_id = memory.store_bet(
-            session_id=result["session_ids"]["execute"],
+            session_id=exec_info.get("session_id") or "",
             market=decision["market"],
             direction=decision["direction"],
             amount=decision["amount"],
