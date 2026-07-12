@@ -26,9 +26,15 @@ from typing import Optional
 
 from .decision import Market, BetDecision
 
-MODEL_ID    = "Qwen/Qwen2.5-1.5B-Instruct"
+# 0.5B trains in minutes on M-series; override with GRPO_MODEL_ID for bigger
+MODEL_ID    = os.getenv("GRPO_MODEL_ID", "Qwen/Qwen2.5-0.5B-Instruct")
 WEIGHTS_DIR = Path("data/grpo_weights")
 MIN_SAMPLES = 5   # minimum resolved bets before we train
+
+# Fast hackathon config — tune via env if needed
+NUM_GENERATIONS = int(os.getenv("GRPO_NUM_GENERATIONS", "2"))
+MAX_COMPLETION  = int(os.getenv("GRPO_MAX_COMPLETION", "128"))
+MAX_TRAIN_STEPS = int(os.getenv("GRPO_MAX_STEPS", "40"))
 
 
 POLICY_SYSTEM = """You are a FIFA World Cup 2026 prediction market specialist.
@@ -156,33 +162,36 @@ class GRPOBettingModel:
 
         from datasets import Dataset
 
+        # Cap dataset so training completes in minutes, not hours
+        capped = trajectories[: MAX_TRAIN_STEPS * NUM_GENERATIONS]
         print(
-            f"\n  [GRPO] Fine-tuning on {len(trajectories)} trajectories "
-            f"(G=4 samples, 1 epoch)...",
+            f"\n  [GRPO] Fine-tuning on {len(capped)} trajectories "
+            f"(G={NUM_GENERATIONS}, max {MAX_TRAIN_STEPS} steps)...",
             file=sys.stderr,
         )
 
-        reward_map = {t["prompt"]: float(t["reward"]) for t in trajectories}
+        reward_map = {t["prompt"]: float(t["reward"]) for t in capped}
 
         def reward_fn(completions, prompts=None, **kwargs):
             prompts = prompts or []
             return [reward_map.get(p, 0.0) for p in prompts]
 
-        dataset = Dataset.from_dict({"prompt": [t["prompt"] for t in trajectories]})
+        dataset = Dataset.from_dict({"prompt": [t["prompt"] for t in capped]})
 
         cfg = GRPOConfig(
-            num_generations=4,
-            max_completion_length=256,
-            learning_rate=5e-6,
-            num_train_epochs=1,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=4,
+            num_generations=NUM_GENERATIONS,
+            max_completion_length=MAX_COMPLETION,
+            max_steps=MAX_TRAIN_STEPS,
+            learning_rate=1e-5,
+            per_device_train_batch_size=NUM_GENERATIONS,
+            gradient_accumulation_steps=1,
             output_dir=str(WEIGHTS_DIR / "checkpoints"),
-            logging_steps=1,
-            save_steps=100,
+            logging_steps=5,
+            save_steps=1000,
             report_to="none",
             use_vllm=False,
             remove_unused_columns=False,
+            dataloader_pin_memory=False,
         )
 
         trainer = GRPOTrainer(
@@ -220,9 +229,10 @@ class GRPOBettingModel:
         if self._tokenizer.pad_token is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
+        # float32: fp16 training on MPS produces NaN losses; 0.5B fp32 fits easily
         base = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            torch_dtype=torch.float16,
+            torch_dtype=torch.float32,
             trust_remote_code=True,
             low_cpu_mem_usage=True,
         )
@@ -244,12 +254,7 @@ class GRPOBettingModel:
             self._model = get_peft_model(base, lora_cfg)
 
         device = _device()
-        if device == "mps":
-            # MPS doesn't support all float16 ops — keep on CPU for training
-            # but use MPS for inference after loading
-            self._model = self._model.to("cpu")
-        else:
-            self._model = self._model.to(device)
+        self._model = self._model.to(device)
 
         self._model.eval()
         trained_str = "fine-tuned" if self._trained else "base (not yet trained)"

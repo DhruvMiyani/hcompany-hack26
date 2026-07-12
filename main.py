@@ -222,9 +222,9 @@ def cmd_simulate():
     console.print(Panel(
         "[bold cyan]GRPO Cold Start[/bold cyan]\n\n"
         "  1. Fetch live WC markets from Kalshi API\n"
-        "  2. Monte Carlo simulate 300 bet outcomes\n"
-        "  3. Fine-tune Qwen2.5-1.5B with GRPO on simulated P&L rewards\n\n"
-        "[dim]First run downloads ~3GB model — takes a few minutes[/dim]",
+        "  2. Monte Carlo simulate 100 bet outcomes\n"
+        "  3. Fine-tune Qwen2.5-0.5B with GRPO on simulated P&L rewards\n\n"
+        "[dim]First run downloads ~1GB model — trains in minutes on M4[/dim]",
         title="GRPO Simulator",
     ))
 
@@ -236,8 +236,8 @@ def cmd_simulate():
     markets = get_open_wc_markets()
     console.print(f"  {len(markets)} markets fetched")
 
-    console.print("\n[cyan]Generating 300 synthetic trajectories...[/cyan]")
-    trajectories = generate_trajectories(markets, strategy, n=300)
+    console.print("\n[cyan]Generating 100 synthetic trajectories...[/cyan]")
+    trajectories = generate_trajectories(markets, strategy, n=100)
     wins = sum(1 for t in trajectories if t["won"])
     avg_reward = sum(t["reward"] for t in trajectories) / len(trajectories)
     console.print(f"  Simulated: {len(trajectories)} | Win rate: {wins/len(trajectories):.0%} | Avg reward: {avg_reward:.3f}")
