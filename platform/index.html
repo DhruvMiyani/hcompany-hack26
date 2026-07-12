@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Betting agent — supervised, live</title>
+<title>Autonomous Trading — supervised, live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -213,7 +213,7 @@ td .sub { color:var(--faint); font-size:.78rem; }
 <body>
 
 <header class="topbar">
-  <div class="wordmark"><span class="orb"></span>Betting&nbsp;Agent</div>
+  <div class="wordmark"><span class="orb"></span>Autonomous&nbsp;Trading</div>
   <nav class="topnav">
     <button class="active" data-view="command">Command</button>
     <button data-view="markets">Markets</button>
@@ -237,7 +237,7 @@ td .sub { color:var(--faint); font-size:.78rem; }
       <span class="state-tag off" id="state-tag">Connecting…</span>
     </div>
     <h1>Watch it bet.<br>Step in <em>anytime.</em></h1>
-    <p class="lede">A self-improving FIFA World Cup betting agent trading demo markets on Kalshi. It runs on its own, learns from every settled bet through GRPO, and hands the decision to you whenever a bet crosses your limit.</p>
+    <p class="lede">A self-improving autonomous trading agent for FIFA World Cup markets on Kalshi (demo). It runs on its own, learns from every settled bet through GRPO, and hands the decision to you whenever a bet crosses your limit.</p>
     <div class="hero-actions">
       <button class="btn" id="fund-btn" onclick="addFunds()">＋ Add funds</button>
       <button class="btn primary" id="bet-btn" onclick="betForMe()">🎯 Bet for me</button>
@@ -498,7 +498,7 @@ async function betForMe() {
     await api('/api/bet', 'POST');
   } catch (e) {
     addStream(`<b>Failed to start:</b> ${e.message}`, 'loss');
-    toast('human', 'Betting agent', 'Could not start the pipeline: ' + e.message);
+    toast('human', 'Trading agent', 'Could not start the pipeline: ' + e.message);
     betRunning = false; btn.disabled = false; setState('run');
     return;
   }
@@ -528,7 +528,7 @@ async function betForMe() {
       if (w.result === 'placed') {
         addStream('<b>Bet placed</b> on demo.kalshi.co', 'win');
         setVerdict(true, '✓ Bet placed on demo.kalshi.co');
-        toast('win', 'Betting agent', 'Bet placed successfully.');
+        toast('win', 'Trading agent', 'Bet placed successfully.');
         agentSay('Placed. It shows under Positions — and when it settles, the result becomes a reward-labelled trajectory for the next policy.');
       } else if (w.result === 'insufficient_funds') {
         addStream('<b>Insufficient demo funds</b> — add funds first', 'loss');
