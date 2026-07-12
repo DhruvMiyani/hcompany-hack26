@@ -98,6 +98,9 @@ python main.py check
 python main.py stats
 
 # Human-in-the-loop platform (control panel + command center)
+# Auto-improves every 12h while running: refreshes settled markets,
+# re-runs the research loop, crowns the champion. AUTO_IMPROVE=0 to
+# disable, IMPROVE_EVERY_HOURS=6 to tune. Manual: python main.py improve
 python server.py          # → http://localhost:8080  (deck: /deck)
 
 # GRPO training dashboard

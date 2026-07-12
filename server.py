@@ -102,6 +102,33 @@ def run_improve_async() -> dict:
     return {"started": True}
 
 
+AUTO_IMPROVE = os.getenv("AUTO_IMPROVE", "1") != "0"
+IMPROVE_EVERY_H = float(os.getenv("IMPROVE_EVERY_HOURS", "12"))
+
+
+def _auto_improve_scheduler():
+    """No-click self-improvement: while the platform runs, kick off an
+    improve cycle whenever the last one is older than IMPROVE_EVERY_HOURS.
+
+    Staleness is judged by the improve log's mtime, so server restarts
+    don't retrigger and a run in progress (fresh mtime) is never doubled.
+    Random jitter keeps two server instances from firing simultaneously.
+    """
+    import random
+    import time
+    time.sleep(60 + random.uniform(0, 120))   # let the server settle
+    while True:
+        try:
+            last = IMPROVE_LOG.stat().st_mtime if IMPROVE_LOG.exists() else 0
+            if time.time() - last > IMPROVE_EVERY_H * 3600:
+                print(f"[auto-improve] last cycle >{IMPROVE_EVERY_H:.0f}h ago "
+                      "— starting a new one")
+                run_improve_async()
+        except Exception as e:
+            print(f"[auto-improve] error: {e}")
+        time.sleep(600 + random.uniform(0, 180))
+
+
 def improve_watch() -> dict:
     if not IMPROVE_LOG.exists():
         return {"phase": "idle", "champion": None, "log_tail": ""}
@@ -266,4 +293,9 @@ if __name__ == "__main__":
     PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
     print(f"Tandem platform → http://localhost:{PORT}")
     print(f"  UI: {UI_FILE}")
+    if AUTO_IMPROVE:
+        import threading
+        threading.Thread(target=_auto_improve_scheduler, daemon=True).start()
+        print(f"  auto-improve: every {IMPROVE_EVERY_H:.0f}h "
+              "(AUTO_IMPROVE=0 to disable)")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
