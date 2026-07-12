@@ -404,9 +404,37 @@ def cmd_fund():
     ))
 
 
+def cmd_improve():
+    """Self-improvement cycle for the tabular champion:
+    refresh settled markets (new results since last build, including markets
+    we bet on) → re-run the research loop → crown the best model. The live
+    pipeline picks up the new champion automatically on the next bet.
+    """
+    console.print(Panel(
+        "[bold cyan]Self-improvement cycle[/bold cyan]\n\n"
+        "  1. Refresh dataset from newly settled Kalshi markets\n"
+        "  2. Re-run tabular research loop ({lr, xgb} x {±history})\n"
+        "  3. Crown champion — next bet uses it automatically",
+        title="Improve",
+    ))
+    from agent.dataset import build_and_save
+    n_train, n_test = build_and_save(max_per_series=400, log=console.print)
+
+    import research_loop_tabular
+    champ = research_loop_tabular.run("f1", log=console.print)
+    if champ:
+        console.print(Panel(
+            f"[green]New champion: {champ['experiment']}[/green]\n"
+            f"  F1 {champ['score']} vs market baseline {champ['baseline_f1']}\n"
+            f"  Trained on {n_train} settled markets ({n_test} held out)\n\n"
+            f"  The next 'Bet for me' uses this model — no deploy step.",
+            title="Improve — Result",
+        ))
+
+
 COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats,
             "simulate": cmd_simulate, "train": cmd_train, "refit": cmd_refit,
-            "kickoff": cmd_kickoff, "fund": cmd_fund}
+            "kickoff": cmd_kickoff, "fund": cmd_fund, "improve": cmd_improve}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"

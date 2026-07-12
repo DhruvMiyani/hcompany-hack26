@@ -90,6 +90,10 @@
       <span class="big">▤ Check portfolio</span>
       <span class="small">Browser reads open positions</span>
     </button>
+    <button id="b-improve" onclick="selfImprove()">
+      <span class="big">🧠 Self-improve</span>
+      <span class="small">Pull newly settled markets → retrain → crown champion (~5 min)</span>
+    </button>
   </div>
 
   <div class="log" style="margin-bottom:1.25rem;">
@@ -174,6 +178,33 @@ async function placeBet() {
     log(`Could not start the pipeline: ${e.message}`, ['err','error']);
     btn.disabled = false;
   }
+}
+
+let improvePoll = null;
+async function selfImprove() {
+  const btn = $('b-improve'); btn.disabled = true;
+  log('Self-improvement cycle — refreshing settled markets…', ['run','improve']);
+  try {
+    await api('/api/improve', 'POST');
+  } catch (e) {
+    log(`Could not start: ${e.message}`, ['err','error']);
+    btn.disabled = false; return;
+  }
+  let lastPhase = '';
+  clearInterval(improvePoll);
+  improvePoll = setInterval(async () => {
+    let w;
+    try { w = await api('/api/improve-watch'); } catch { return; }
+    if (w.phase !== lastPhase && w.phase !== 'done') {
+      lastPhase = w.phase;
+      log(`Improve: ${w.phase}…`, ['run','improve']);
+    }
+    if (w.phase === 'done') {
+      clearInterval(improvePoll); btn.disabled = false;
+      log(`Self-improvement done — new champion: <b>${w.champion}</b>. Next bet uses it automatically.`, ['ok','champion']);
+      loadModel();
+    }
+  }, 5000);
 }
 
 function renderBets(bets) {

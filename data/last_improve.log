@@ -1,0 +1,8 @@
+╭────────────────────────────────── Improve ───────────────────────────────────╮
+│ Self-improvement cycle                                                       │
+│                                                                              │
+│   1. Refresh dataset from newly settled Kalshi markets                       │
+│   2. Re-run tabular research loop ({lr, xgb} x {±history})                   │
+│   3. Crown champion — next bet uses it automatically                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  KXWCGAME: 300 settled markets

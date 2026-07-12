@@ -89,6 +89,33 @@ def model_status() -> dict:
 
 
 BET_LOG = ROOT / "data" / "last_bet.log"
+IMPROVE_LOG = ROOT / "data" / "last_improve.log"
+
+
+def run_improve_async() -> dict:
+    """Self-improvement cycle (dataset refresh + tabular research loop),
+    detached; UI polls /api/improve-watch."""
+    with open(IMPROVE_LOG, "w") as fh:
+        subprocess.Popen([sys.executable, str(ROOT / "main.py"), "improve"],
+                         cwd=str(ROOT), env=dict(os.environ),
+                         stdout=fh, stderr=subprocess.STDOUT)
+    return {"started": True}
+
+
+def improve_watch() -> dict:
+    if not IMPROVE_LOG.exists():
+        return {"phase": "idle", "champion": None, "log_tail": ""}
+    text = IMPROVE_LOG.read_text(errors="replace")
+    out = {"phase": "refreshing dataset", "champion": None,
+           "log_tail": "\n".join(text.splitlines()[-3:])}
+    if "tabular:" in text:
+        out["phase"] = "running research loop"
+    import re
+    m = re.search(r"New champion: (\S+)", text)
+    if m:
+        out["phase"] = "done"
+        out["champion"] = m.group(1)
+    return out
 
 
 def run_bet_async() -> dict:
@@ -200,6 +227,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._html(ARCH_FILE.read_text())
             elif path == "/api/learning":
                 self._json(learning_status())
+            elif path == "/api/improve-watch":
+                self._json(improve_watch())
             elif path == "/api/stats":
                 self._json(stats())
             elif path == "/api/model":
@@ -225,6 +254,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(start_browser_session(mode))
             elif path == "/api/bet":
                 self._json(run_bet_async())
+            elif path == "/api/improve":
+                self._json(run_improve_async())
             else:
                 self._json({"error": "not found"}, 404)
         except Exception as e:
