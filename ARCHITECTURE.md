@@ -26,6 +26,12 @@
               └────────────────────────────┘
 ```
 
+> **Update (Jul 12):** the live decision-maker is now the **tabular champion
+> (XGBoost)** — `agent/tabular_policy.py` scores every fetched market and bets
+> the largest edge > 5¢ (Kelly-sized) in under a second. GRPO + Holo run only
+> as fallback when no market clears the margin. Champions are crowned by
+> `research_loop_tabular.py` on held-out settled markets.
+
 ## What's structurally good
 
 1. **Decision and execution are decoupled.** The model picks (`ticker`,
