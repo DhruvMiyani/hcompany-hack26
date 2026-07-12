@@ -242,6 +242,12 @@ def cmd_simulate():
     avg_reward = sum(t["reward"] for t in trajectories) / len(trajectories)
     console.print(f"  Simulated: {len(trajectories)} | Win rate: {wins/len(trajectories):.0%} | Avg reward: {avg_reward:.3f}")
 
+    # Persist for inspection — data/trajectories.json
+    import json
+    traj_path = Path("data") / "trajectories.json"
+    traj_path.write_text(json.dumps(trajectories, indent=2))
+    console.print(f"  Training data saved → [green]{traj_path}[/green]")
+
     console.print("\n[cyan]Running GRPO fine-tuning on Qwen2.5-1.5B...[/cyan]")
     grpo = get_model()
     trained = grpo.train(trajectories)
