@@ -233,6 +233,8 @@ td .sub { color:var(--faint); font-size:.78rem; }
     </div>
     <span class="pill wait" id="agent-pill">needs you</span>
     <div class="head-actions">
+      <button class="ghost-btn" id="fund-btn" onclick="addFunds()">＋ Add demo funds</button>
+      <button class="ghost-btn" id="bet-btn" onclick="runBet()">Run bet pipeline</button>
       <button class="ghost-btn" id="pause-btn" onclick="togglePause()">Pause agent</button>
       <button class="ghost-btn" onclick="toast('','Settings','Bet limits, autonomy and notifications are mock-only in this preview.')">Settings</button>
     </div>
@@ -270,6 +272,24 @@ td .sub { color:var(--faint); font-size:.78rem; }
     <div class="panel chat">
       <div class="panel-head">Chat with your agent</div>
       <div class="chat-scroll" id="chat">
+        <div class="msg agent"><span class="who">Agent</span>Heads up — the demo account is out of cash (<b>$0.01</b> available), so I can't place any bet you approve until it's funded. Want me to top up the demo balance? I'll drive the browser to do it, with you watching.</div>
+
+        <div class="handoff" id="handoff-fund">
+          <span class="who">Approve top-up</span>
+          <h4>Add demo funds</h4>
+          <p>demo.kalshi.co · play money · needed before any bet can fill</p>
+          <div class="ticket">
+            <span class="k">Available now</span><span class="val">$0.01</span>
+            <span class="k">Top up to</span><span class="val">$100.00</span>
+            <span class="k">Method</span><span class="val">browser agent (web-surfer)</span>
+            <span class="k">You watch</span><span class="val pos">live session</span>
+          </div>
+          <div class="actions">
+            <button class="approve" onclick="approveFunds()">Approve &amp; add $100</button>
+            <button class="reject" onclick="decide('handoff-fund', false, 'demo top-up')">Not now</button>
+          </div>
+        </div>
+
         <div class="msg agent"><span class="who">Agent</span>I found an edge on the France–Brazil semifinal. Market implies France at 47¢ but my policy puts fair value at 58¢ after adjusting for Brazil's missing striker. I'd like to bet YES on France.</div>
         <div class="msg me"><span class="who">You</span>How confident, and how big?</div>
         <div class="msg agent"><span class="who">Agent</span>Confidence 71%. Kelly says $4.20, I'd cap it at $3.50 to stay under 2% of bankroll. It's over the $2 auto-limit, so it's your call:</div>
@@ -421,7 +441,7 @@ document.querySelectorAll('[data-view]').forEach(el =>
   el.addEventListener('click', () => show(el.dataset.view)));
 
 /* ── pending-approval counter ── */
-let pending = 2;
+let pending = 3;
 function renderPending() {
   const badge = document.getElementById('nav-badge');
   badge.textContent = pending; badge.style.display = pending ? '' : 'none';
@@ -515,6 +535,93 @@ setTimeout(() => toast('win', 'Betting agent', 'Won +$1.20 — Argentina to win 
 setTimeout(() => toast('human', 'Betting agent', "Still waiting on you: France to win — YES · $3.50."), 38000);
 
 renderPending();
+
+/* ── live backend wiring (server.py) ────────────────────────────────────────
+   Falls back silently to the mock UI if the backend isn't running, so the
+   page still works when opened as a static file. */
+const API = '';   // same origin as server.py
+
+async function api(path, method = 'GET') {
+  const res = await fetch(API + path, { method });
+  if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+  return res.json();
+}
+
+async function addFunds() {
+  const btn = document.getElementById('fund-btn');
+  btn.disabled = true; btn.textContent = 'Starting…';
+  try {
+    const r = await api('/api/fund?amount=100', 'POST');
+    toast('human', 'Betting agent', `Add-funds session started — watch it drive: ${r.watch_url}`);
+    window.open(r.watch_url, '_blank');
+  } catch (e) {
+    toast('', 'Backend', `Add funds needs the backend: run "python server.py" (${e.message}).`);
+  } finally {
+    btn.disabled = false; btn.textContent = '＋ Add demo funds';
+  }
+}
+
+/* Human-in-the-loop: the human approves the top-up, the agent executes it in
+   the browser, and the card resolves with the live session link. */
+async function approveFunds() {
+  const card = document.getElementById('handoff-fund');
+  if (card.classList.contains('decided')) return;
+  card.classList.add('decided');
+  const actions = card.querySelector('.actions');
+  actions.innerHTML = '<span class="verdict ok">✓ Approved — starting browser session…</span>';
+  pending--; renderPending();
+  addFeed('<b>You approved:</b> add $100 demo funds', 'you');
+  try {
+    const r = await api('/api/fund?amount=100', 'POST');
+    actions.innerHTML = `<span class="verdict ok">✓ Funding in progress — <a href="${r.watch_url}" target="_blank">watch live →</a></span>`;
+    agentSay(`On it — I'm topping up the demo balance to $100 now. <a href="${r.watch_url}" target="_blank" style="color:var(--learn)">Watch me do it live →</a> Once it lands, approved bets will fill.`);
+    addFeed('<b>Adding funds</b> — browser session live', 'reward');
+    window.open(r.watch_url, '_blank');
+  } catch (e) {
+    actions.innerHTML = `<span class="verdict no">✕ Backend offline — run "python server.py" first</span>`;
+    agentSay(`I couldn't start the funding session — the backend isn't running. Start it with <b>python server.py</b> and reopen this page. (${e.message})`);
+  }
+}
+
+async function runBet() {
+  const btn = document.getElementById('bet-btn');
+  btn.disabled = true; btn.textContent = 'Running…';
+  try {
+    await api('/api/bet', 'POST');
+    toast('learn', 'Betting agent', 'Bet pipeline launched — decision → browser execution. Polling for the result…');
+    setTimeout(refreshStats, 20000);
+  } catch (e) {
+    toast('', 'Backend', `Run needs the backend: run "python server.py" (${e.message}).`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run bet pipeline';
+  }
+}
+
+async function refreshStats() {
+  try {
+    const s = await api('/api/stats');
+    const pnl = document.getElementById('tele-pnl');
+    if (pnl) {
+      pnl.textContent = (s.pnl >= 0 ? '+' : '') + '$' + s.pnl.toFixed(2);
+      pnl.className = 'value ' + (s.pnl >= 0 ? 'pos' : 'neg');
+    }
+    const badge = document.getElementById('agent-pill');
+    if (badge && s.total_bets > 0)
+      toast('', 'Stats', `${s.total_bets} bets recorded · ${s.wins}W/${s.losses}L · net $${s.pnl.toFixed(2)}`);
+  } catch (e) { /* backend not running — keep mock values */ }
+}
+
+async function checkModel() {
+  try {
+    const m = await api('/api/model');
+    const row = document.querySelector('.side-status .row[style]');
+    if (row) row.textContent = m.trained ? '◆ Policy live (GRPO adapter)' : '◆ Base policy (untrained)';
+  } catch (e) { /* offline */ }
+}
+
+// Link the platform to the live model on load.
+refreshStats();
+checkModel();
 </script>
 </body>
 </html>

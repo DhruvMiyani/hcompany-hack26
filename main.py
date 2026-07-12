@@ -370,9 +370,43 @@ def cmd_kickoff():
     ))
 
 
+def cmd_fund():
+    """Kick off a browser session to add/reset the Kalshi demo balance.
+
+      python main.py fund [amount]     (default $100)
+    """
+    if not os.getenv("HAI_API_KEY"):
+        console.print("[red]HAI_API_KEY not set in .env[/red]")
+        sys.exit(1)
+
+    from hai_agents import Client
+    from agent.tasks import add_funds_task
+    from agent.runner import AGENT_VIEW_HOST, EXECUTE_AGENT
+
+    amount = float(sys.argv[2]) if len(sys.argv) > 2 else 100.0
+    url = os.getenv("KALSHI_URL", "https://demo.kalshi.co")
+    email = os.environ["KALSHI_EMAIL"]
+    password = os.environ["KALSHI_PASSWORD"]
+
+    client = Client(api_key=os.environ["HAI_API_KEY"])
+    session = client.sessions.create_session(
+        agent=EXECUTE_AGENT,
+        messages=add_funds_task(url, email, password, amount),
+    )
+    watch = f"{AGENT_VIEW_HOST}/agent-view/{session.id}"
+    console.print(Panel(
+        f"[green]Add-funds session started[/green]\n\n"
+        f"  Target  : {url}\n"
+        f"  Amount  : ${amount:.2f} demo funds\n"
+        f"  Session : {session.id}\n\n"
+        f"  Watch → [cyan]{watch}[/cyan]",
+        title="Fund — Demo Balance",
+    ))
+
+
 COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats,
             "simulate": cmd_simulate, "train": cmd_train, "refit": cmd_refit,
-            "kickoff": cmd_kickoff}
+            "kickoff": cmd_kickoff, "fund": cmd_fund}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"

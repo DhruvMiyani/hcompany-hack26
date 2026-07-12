@@ -86,6 +86,31 @@ SUMMARY: [total bets] bets, [total won] won, [total lost] lost, [net P&L] net
 """
 
 
+# ── Add funds ───────────────────────────────────────────────────────────────
+
+def add_funds_task(url: str, email: str, password: str, amount: float = 100.0) -> str:
+    return f"""
+Go to {url} and log in with these credentials:
+  Email: {email}
+  Password: {password}
+
+This is a DEMO / paper-trading account. Add or reset the demo balance so it has
+at least ${amount:.2f} of play money available to trade with.
+
+Steps (try in order until the balance increases):
+1. Open the account / wallet / settings menu (often the avatar or balance in the top-right).
+2. Look for "Add demo funds", "Reset balance", "Deposit", "Add funds", or a
+   similar play-money control.
+3. If prompted for an amount, enter {amount:.0f}.
+4. Confirm the action.
+5. Return to the portfolio and read the new available cash balance.
+
+Report back with these exact labels:
+STATUS: [Funds added successfully / Error: <description>]
+NEW_BALANCE: [available cash as a number, e.g. 100.00]
+"""
+
+
 # ── Reflection ────────────────────────────────────────────────────────────────
 
 REFLECTION_SYSTEM = """You are a sports betting strategy analyst specialising in prediction markets.
