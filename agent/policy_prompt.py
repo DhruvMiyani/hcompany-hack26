@@ -86,22 +86,38 @@ def _extract_json(text: str) -> Optional[dict]:
         return None
 
 
-def parse_decision(content: str, id_map: dict) -> Optional[BetDecision]:
-    """Parse model JSON, resolving market_id -> real ticker via id_map."""
+def parse_decision(content: str, id_map: dict,
+                   max_amount: float = 5.0) -> Optional[BetDecision]:
+    """Parse model JSON, resolving market_id -> real ticker via id_map.
+
+    Amount and confidence are clamped to sane ranges: a small model will
+    occasionally emit a nonsense stake (e.g. $14.6M) and nothing downstream
+    should ever act on an unbounded number.
+    """
     data = _extract_json(content)
     if data is None:
         return None
     mid = str(data.get("market_id", "")).upper().strip()
     market = id_map.get(mid)
+
     conf = float(data.get("confidence", 0.5))
+    conf = conf / 100.0 if conf > 1.0 else conf
+    conf = min(max(conf, 0.0), 1.0)
+
+    try:
+        amount = float(data.get("amount", 1.0))
+    except (TypeError, ValueError):
+        amount = 1.0
+    amount = min(max(amount, 1.0), max_amount)
+
     return BetDecision(
         skip=bool(data.get("skip", False)),
         market=market.name if market else data.get("market"),
         ticker=market.ticker if market else None,
         direction=data.get("direction"),
-        amount=float(data.get("amount", 1.0)),
+        amount=round(amount, 2),
         reasoning=data.get("reasoning", ""),
-        confidence=round(conf / 100.0 if conf > 1.0 else conf, 3),
+        confidence=round(conf, 3),
     )
 
 

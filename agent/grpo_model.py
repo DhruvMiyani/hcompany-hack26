@@ -121,7 +121,7 @@ class GRPOBettingModel:
 
         new_tokens = out[0][inputs["input_ids"].shape[1]:]
         raw = self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-        return parse_decision(raw, id_map)
+        return parse_decision(raw, id_map, max_amount)
 
     # ── Training ──────────────────────────────────────────────────────────────
 
