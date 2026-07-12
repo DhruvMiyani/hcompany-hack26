@@ -128,6 +128,44 @@ def split_by_event(examples: list[dict],
     return train, test
 
 
+RATINGS_PATH = DATA_DIR / "team_ratings.json"
+_EVENT_TEAMS = None  # lazy: {"KALSHI_CODE": elo}
+_TEAMS_RE = None
+
+
+def _team_ratings() -> dict:
+    global _EVENT_TEAMS, _TEAMS_RE
+    if _EVENT_TEAMS is None:
+        import re
+        _EVENT_TEAMS = (json.loads(RATINGS_PATH.read_text())
+                        if RATINGS_PATH.exists() else {})
+        _TEAMS_RE = re.compile(r"-26[A-Z]{3}\d{2}([A-Z]{3})([A-Z]{3})$")
+    return _EVENT_TEAMS
+
+
+def _elo_features(ex: dict) -> dict:
+    """Team-strength features oriented by the market's outcome.
+
+    Winner-FRA in FRA-vs-ESP gets France's Elo edge; Winner-ESP the inverse;
+    Tie/BTTS/total markets get closeness (|diff|) only. Scaled by 400 (one
+    Elo 'class' ≈ 10x odds), so values live in roughly [-1, 1].
+    """
+    ratings = _team_ratings()
+    m = _TEAMS_RE.search(ex.get("event", ""))
+    if not m:
+        return {"has_elo": 0, "elo_edge": 0.0, "elo_absdiff": 0.0}
+    t1, t2 = m.group(1), m.group(2)
+    e1, e2 = ratings.get(t1), ratings.get(t2)
+    if e1 is None or e2 is None:
+        return {"has_elo": 0, "elo_edge": 0.0, "elo_absdiff": 0.0}
+    suffix = ex.get("ticker", "").rsplit("-", 1)[-1]
+    edge = ((e1 - e2) if suffix == t1 else
+            (e2 - e1) if suffix == t2 else 0)
+    return {"has_elo": 1,
+            "elo_edge": round(edge / 400.0, 4),
+            "elo_absdiff": round(abs(e1 - e2) / 400.0, 4)}
+
+
 def enrich(examples: list[dict]) -> list[dict]:
     """Add derived features from sibling markets (same event + category).
 
@@ -151,6 +189,7 @@ def enrich(examples: list[dict]) -> list[dict]:
             e["price_rank"] = prices.index(p) + 1
             e["is_favorite"] = 1 if e["price_rank"] == 1 else 0
             e["fav_gap"] = round(prices[0] - p, 4)
+            e.update(_elo_features(e))
     return examples
 
 

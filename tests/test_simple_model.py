@@ -32,7 +32,32 @@ def test_enrich_groups_by_event_and_category():
 
 def test_featurize_length_is_stable():
     ex = enrich([_ex(0.5, 1)])[0]
-    assert len(featurize(ex)) == 8 + len(CATEGORIES)
+    assert len(featurize(ex)) == 11 + len(CATEGORIES)
+
+
+def test_elo_features_oriented_by_ticker_suffix(monkeypatch, tmp_path):
+    import json
+    from agent import dataset
+    ratings = tmp_path / "team_ratings.json"
+    ratings.write_text(json.dumps({"FRA": 2163, "ESP": 2190}))
+    monkeypatch.setattr(dataset, "RATINGS_PATH", ratings)
+    monkeypatch.setattr(dataset, "_EVENT_TEAMS", None)  # bust the cache
+
+    def mk(suffix):
+        return _ex(0.4, 1, event="KXWCGAME-26JUL14FRAESP",
+                   ticker=f"KXWCGAME-26JUL14FRAESP-{suffix}")
+    fra, esp, tie = enrich([mk("FRA"), mk("ESP"), mk("TIE")])
+    assert fra["elo_edge"] == pytest.approx((2163 - 2190) / 400)
+    assert esp["elo_edge"] == pytest.approx((2190 - 2163) / 400)
+    assert tie["elo_edge"] == 0.0                      # tie: no team side
+    assert tie["elo_absdiff"] == pytest.approx(27 / 400)
+    assert all(e["has_elo"] == 1 for e in (fra, esp, tie))
+    monkeypatch.setattr(dataset, "_EVENT_TEAMS", None)  # don't leak to other tests
+
+
+def test_elo_features_absent_without_ratings():
+    ex = enrich([_ex(0.5, 1, event="NOPATTERN")])[0]
+    assert ex["has_elo"] == 0 and ex["elo_edge"] == 0.0
 
 
 def test_logistic_regression_learns_separable_data():

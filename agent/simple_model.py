@@ -34,6 +34,9 @@ def featurize(ex: dict) -> list[float]:
         (ex.get("price_rank", 1) - 1) / 3.0,
         float(ex.get("is_favorite", 0)),
         ex.get("fav_gap", 0.0),
+        float(ex.get("has_elo", 0)),
+        ex.get("elo_edge", 0.0),
+        ex.get("elo_absdiff", 0.0),
         *cat_onehot,
     ]
 
