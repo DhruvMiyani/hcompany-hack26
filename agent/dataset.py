@@ -189,8 +189,15 @@ def enrich(examples: list[dict]) -> list[dict]:
             e["price_rank"] = prices.index(p) + 1
             e["is_favorite"] = 1 if e["price_rank"] == 1 else 0
             e["fav_gap"] = round(prices[0] - p, 4)
-            e.update(_elo_features(e))
+            if "has_elo" not in e:      # history rows carry precomputed Elo
+                e.update(_elo_features(e))
     return examples
+
+
+def load_history() -> list[dict]:
+    """WC 2018/2022 pseudo-markets (fetch_history.py) — training only."""
+    path = DATA_DIR / "dataset_history.json"
+    return enrich(json.loads(path.read_text())) if path.exists() else []
 
 
 def load_dataset() -> tuple[list[dict], list[dict]]:

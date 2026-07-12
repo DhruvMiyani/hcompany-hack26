@@ -37,6 +37,7 @@ def featurize(ex: dict) -> list[float]:
         float(ex.get("has_elo", 0)),
         ex.get("elo_edge", 0.0),
         ex.get("elo_absdiff", 0.0),
+        float(ex.get("is_history", 0)),   # pseudo-market: price is Elo-derived
         *cat_onehot,
     ]
 
@@ -90,6 +91,37 @@ class SimpleModel:
         d = json.loads(path.read_text())
         return cls(w=np.array(d["w"]), b=d["b"],
                    mean=np.array(d["mean"]), std=np.array(d["std"]))
+
+
+class BoostedModel:
+    """Gradient-boosted trees (XGBoost) behind the same interface as
+    SimpleModel — the 'strong tabular' competitor."""
+
+    def __init__(self, rounds: int = 300, **params):
+        self.rounds = rounds
+        self.params = {
+            "max_depth": 3, "eta": 0.05, "subsample": 0.9,
+            "colsample_bytree": 0.9, "lambda": 1.0,
+            "objective": "binary:logistic", "eval_metric": "logloss",
+            "nthread": 2, "seed": 7, **params,
+        }
+        self._model = None
+
+    def fit(self, examples: list[dict]):
+        import xgboost as xgb
+        X = np.array([featurize(e) for e in examples])
+        y = np.array([e["result"] for e in examples])
+        self._model = xgb.train(self.params, xgb.DMatrix(X, label=y),
+                                num_boost_round=self.rounds)
+        return self
+
+    def predict_proba(self, examples: list[dict]) -> np.ndarray:
+        import xgboost as xgb
+        X = np.array([featurize(e) for e in examples])
+        return self._model.predict(xgb.DMatrix(X))
+
+    def predict(self, examples: list[dict]) -> list[int]:
+        return [1 if p > 0.5 else 0 for p in self.predict_proba(examples)]
 
 
 def edge_strategy(examples: list[dict], probs: np.ndarray,

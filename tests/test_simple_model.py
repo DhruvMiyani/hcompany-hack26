@@ -32,7 +32,7 @@ def test_enrich_groups_by_event_and_category():
 
 def test_featurize_length_is_stable():
     ex = enrich([_ex(0.5, 1)])[0]
-    assert len(featurize(ex)) == 11 + len(CATEGORIES)
+    assert len(featurize(ex)) == 12 + len(CATEGORIES)
 
 
 def test_elo_features_oriented_by_ticker_suffix(monkeypatch, tmp_path):
@@ -80,6 +80,16 @@ def test_model_save_load_roundtrip(tmp_path):
     loaded = SimpleModel.load(path)
     test = enrich([_ex(0.9, 1, event="Z")])
     assert loaded.predict(test) == model.predict(test)
+
+
+def test_boosted_model_learns_separable_data():
+    pytest.importorskip("xgboost")
+    from agent.simple_model import BoostedModel
+    train = enrich([_ex(0.8, 1, event=f"E{i}") for i in range(40)]
+                   + [_ex(0.2, 0, event=f"F{i}") for i in range(40)])
+    model = BoostedModel(rounds=50).fit(train)
+    test = enrich([_ex(0.85, 1, event="X"), _ex(0.15, 0, event="Y")])
+    assert model.predict(test) == [1, 0]
 
 
 def test_edge_strategy_only_bets_on_disagreement():
