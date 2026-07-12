@@ -61,6 +61,16 @@ MAX_BET_AMOUNT=5.00
 MAX_BETS_PER_SESSION=1
 ```
 
+### Model weights — nothing to train
+
+- The **base model** (`Qwen/Qwen2.5-0.5B-Instruct`, ~1 GB) downloads
+  **automatically from Hugging Face** on the first `bet`/`simulate` run —
+  no manual download step. Optionally `export HF_TOKEN=hf_...` for faster,
+  rate-limit-free downloads.
+- The **trained GRPO LoRA adapter is committed** in this repo at
+  `data/grpo_weights/adapter/` — you do NOT need to run `simulate` first;
+  `python main.py bet` uses the fine-tuned policy out of the box.
+
 ---
 
 ## Usage
@@ -77,6 +87,12 @@ python main.py check
 
 # Show performance stats, current strategy, learned lessons
 python main.py stats
+
+# Human-in-the-loop platform (control panel + command center)
+python server.py          # → http://localhost:8080  (deck: /deck)
+
+# GRPO training dashboard
+python dashboard.py       # → http://localhost:8787
 ```
 
 ---
@@ -101,7 +117,8 @@ agent/
 main.py             CLI entry point: bet | simulate | check | stats
 data/
   agent_memory.db   SQLite (git-ignored)
-  grpo_weights/     LoRA adapter checkpoints (git-ignored)
+  grpo_weights/     checkpoints git-ignored, but the latest trained
+                    adapter IS committed (data/grpo_weights/adapter/)
 ```
 
 ---
@@ -168,8 +185,12 @@ Bet placed → wait for settlement → python main.py check
 ## Team Notes
 
 - `.env` is git-ignored — ask Dhruv for credentials
-- `data/` is git-ignored — each team member gets their own local DB
-- GRPO cold start: run `python main.py simulate` first — generates 300 synthetic trajectories and trains the initial adapter
-- Model download (~3GB for Qwen2.5-1.5B) happens on first `simulate` or `bet` run
+- `data/agent_memory.db` is git-ignored — each team member gets their own local DB
+- **No GRPO cold start needed** — the trained adapter ships in the repo
+  (`data/grpo_weights/adapter/`); only run `python main.py simulate` if you
+  want to retrain from scratch
+- Base model (`Qwen/Qwen2.5-0.5B-Instruct`, ~1GB) auto-downloads from
+  Hugging Face on the first `simulate` or `bet` run — set `HF_TOKEN` in your
+  shell for faster downloads (optional)
 - MPS (Apple Silicon) is auto-detected — training runs on CPU, inference on MPS
 - Holo always runs as fallback — system works even if GRPO load fails
