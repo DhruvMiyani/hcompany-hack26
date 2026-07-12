@@ -14,6 +14,7 @@ any real bets are placed.
 import random
 from typing import Optional
 from .decision import Market
+from .policy_prompt import build_prompt
 
 
 def generate_trajectories(
@@ -38,11 +39,14 @@ def generate_trajectories(
     if not liquid:
         liquid = markets
 
-    prompt_base = _build_prompt(liquid[:12], strategy_rules)
+    shown = liquid[:12]
+    prompt_base, _ = build_prompt(shown, strategy_rules)
     trajectories = []
 
     for i in range(n):
-        market = liquid[i % len(liquid)]
+        idx = i % len(shown)
+        market = shown[idx]
+        market_id = f"M{idx + 1}"
         direction = random.choice(["Yes", "No"])
         amount = round(random.uniform(1.0, 5.0), 2)
 
@@ -69,13 +73,13 @@ def generate_trajectories(
 
         reward = round(pnl_per_dollar + liquidity_bonus + category_bonus, 4)
 
-        # Build a slightly varied prompt for diversity
-        completion = _build_completion(market, direction, amount, win_prob, won)
+        completion = _build_completion(market_id, market, direction, amount, win_prob)
 
         trajectories.append({
             "prompt": prompt_base,
             "completion": completion,
             "reward": reward,
+            "market_id": market_id,
             "market_ticker": market.ticker,
             "market_category": market.category,
             "direction": direction,
@@ -87,39 +91,19 @@ def generate_trajectories(
     return trajectories
 
 
-def _build_prompt(markets: list[Market], strategy_rules: list[str]) -> str:
-    rules = "\n".join(f"  {i+1}. {r}" for i, r in enumerate(strategy_rules))
-    lines = []
-    for m in markets:
-        vol = f"Vol=${m.volume:,.0f}" if m.volume else "Vol=?"
-        lines.append(
-            f"- [{m.category}] {m.ticker}"
-            f" | Yes={m.yes_price:.2f} No={m.no_price:.2f} | {vol}"
-        )
-
-    return f"""=== KALSHI WC MARKETS ===
-{chr(10).join(lines)}
-
-=== STRATEGY ===
-{rules}
-
-Return JSON: {{"skip": bool, "ticker": str, "direction": "Yes"|"No", "amount": float, "confidence": float, "reasoning": str}}"""
-
-
 def _build_completion(
+    market_id: str,
     market: Market,
     direction: str,
     amount: float,
     confidence: float,
-    won: bool,
 ) -> str:
     import json
     return json.dumps({
         "skip": False,
-        "ticker": market.ticker,
-        "market": market.name[:60],
+        "market_id": market_id,
         "direction": direction,
         "amount": round(amount, 2),
         "confidence": round(confidence, 2),
-        "reasoning": f"Market priced at {market.yes_price:.2f} implies {confidence:.0%} probability. Volume ${market.volume:,.0f} indicates liquidity.",
+        "reasoning": f"Priced {market.yes_price:.2f} implies {confidence:.0%}; volume indicates liquidity.",
     })

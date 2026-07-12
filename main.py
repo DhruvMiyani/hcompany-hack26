@@ -277,11 +277,11 @@ def cmd_train():
     from agent.grpo_model import get_model
     from agent.reward import compute_reward
     from agent.kalshi_api import get_open_wc_markets
-    from agent.simulator import _build_prompt
+    from agent.policy_prompt import build_prompt
 
     strategy = memory.get_latest_strategy()
     markets  = get_open_wc_markets()
-    prompt   = _build_prompt(markets[:12], strategy)
+    prompt, _ = build_prompt(markets[:12], strategy)
 
     trajectories = []
     for bet in resolved:
