@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tandem — agents that learn, with you in the loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0B0E14; --panel:#111726; --panel-2:#151D30; --line:#242E46; --line-soft:#1B2338;
+  --fg:#E9EDF6; --dim:#8792A6; --faint:#5A6478;
+  --machine:#53D8CB; --machine-bg:rgba(83,216,203,.10); --machine-line:rgba(83,216,203,.35);
+  --human:#F2A65A;  --human-bg:rgba(242,166,90,.10);  --human-line:rgba(242,166,90,.45);
+  --learn:#9B8CFF;  --learn-bg:rgba(155,140,255,.10); --learn-line:rgba(155,140,255,.4);
+  --red:#F07A7A; --green:#7DDE9C;
+  --r:12px; --r-sm:8px;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'Instrument Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+* { box-sizing:border-box; margin:0; }
+html,body { height:100%; }
+body { background:var(--ink); color:var(--fg); font:15px/1.5 var(--body); }
+button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+input,textarea { font:inherit; color:inherit; }
+:focus-visible { outline:2px solid var(--machine); outline-offset:2px; border-radius:4px; }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+
+.app { display:grid; grid-template-columns:232px 1fr; min-height:100vh; }
+
+/* ── sidebar ─────────────────────────────── */
+.side { border-right:1px solid var(--line-soft); padding:1.25rem 1rem; display:flex; flex-direction:column; gap:.25rem;
+        position:sticky; top:0; height:100vh; }
+.logo { font-family:var(--display); font-weight:700; font-size:1.25rem; letter-spacing:-.02em; padding:.25rem .6rem 1.1rem; display:flex; align-items:baseline; gap:.5rem; }
+.logo .dot { width:9px; height:9px; border-radius:50%; background:linear-gradient(135deg,var(--machine),var(--human)); display:inline-block; }
+.nav-btn { display:flex; align-items:center; gap:.65rem; padding:.55rem .6rem; border-radius:var(--r-sm); color:var(--dim);
+           font-weight:500; text-align:left; width:100%; }
+.nav-btn:hover { background:var(--panel); color:var(--fg); }
+.nav-btn.active { background:var(--panel-2); color:var(--fg); }
+.nav-btn .ico { width:18px; text-align:center; opacity:.9; }
+.badge { margin-left:auto; background:var(--human-bg); color:var(--human); border:1px solid var(--human-line);
+         font:500 11px var(--mono); border-radius:999px; padding:.05rem .45rem; }
+.side .spacer { flex:1; }
+.new-agent { display:flex; align-items:center; justify-content:center; gap:.5rem; padding:.6rem; border-radius:var(--r-sm);
+             background:var(--fg); color:var(--ink); font-weight:600; }
+.new-agent:hover { opacity:.9; }
+.user { display:flex; align-items:center; gap:.6rem; padding:.9rem .6rem .2rem; color:var(--dim); font-size:.85rem; }
+.avatar { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#3E4C78,#212A44);
+          display:flex; align-items:center; justify-content:center; font:600 11px var(--mono); color:var(--fg); }
+
+/* ── main ────────────────────────────────── */
+main { padding:2rem 2.25rem 3rem; max-width:1120px; width:100%; }
+.eyebrow { font:500 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:.4rem; }
+h1 { font-family:var(--display); font-weight:600; font-size:1.7rem; letter-spacing:-.02em; }
+.lede { color:var(--dim); margin-top:.35rem; max-width:52ch; }
+.lede b { color:var(--human); font-weight:600; }
+.lede .ok { color:var(--machine); font-weight:600; }
+
+/* ── agent cards ─────────────────────────── */
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem; margin-top:1.75rem; }
+.agent-card { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); padding:1.1rem 1.2rem;
+              display:flex; flex-direction:column; gap:.7rem; text-align:left; transition:border-color .2s, transform .2s; }
+.agent-card:hover { border-color:var(--line); transform:translateY(-2px); }
+.agent-card .top { display:flex; align-items:center; gap:.7rem; }
+.glyph { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+         background:var(--panel-2); border:1px solid var(--line-soft); }
+.agent-card h3 { font-family:var(--display); font-weight:600; font-size:1.05rem; }
+.agent-card .kind { color:var(--faint); font-size:.8rem; }
+.pill { font:500 11px var(--mono); padding:.15rem .55rem; border-radius:999px; margin-left:auto; white-space:nowrap; }
+.pill.run   { color:var(--machine); background:var(--machine-bg); border:1px solid var(--machine-line); }
+.pill.wait  { color:var(--human);   background:var(--human-bg);   border:1px solid var(--human-line); }
+.pill.train { color:var(--learn);   background:var(--learn-bg);   border:1px solid var(--learn-line); }
+.pill.off   { color:var(--faint);   background:transparent;      border:1px solid var(--line); }
+.agent-card .meta { display:flex; gap:1.1rem; color:var(--dim); font-size:.82rem; }
+.agent-card .meta b { color:var(--fg); font-family:var(--mono); font-weight:500; }
+.agent-card .foot { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line-soft);
+                    padding-top:.65rem; font-size:.82rem; color:var(--dim); }
+.spark { width:88px; height:26px; }
+.needs { color:var(--human); font-weight:500; }
+
+/* ── agent detail ────────────────────────── */
+.crumbs { display:flex; align-items:center; gap:.75rem; margin-bottom:1.1rem; }
+.back { color:var(--dim); padding:.3rem .6rem; border-radius:var(--r-sm); border:1px solid var(--line-soft); font-size:.85rem; }
+.back:hover { color:var(--fg); border-color:var(--line); }
+.detail-head { display:flex; align-items:center; gap:.9rem; flex-wrap:wrap; }
+.detail-head .glyph { width:44px; height:44px; font-size:1.3rem; }
+.head-actions { margin-left:auto; display:flex; gap:.5rem; }
+.ghost-btn { padding:.45rem .85rem; border:1px solid var(--line); border-radius:var(--r-sm); color:var(--dim); font-size:.85rem; font-weight:500; }
+.ghost-btn:hover { color:var(--fg); border-color:var(--dim); }
+
+.policy-ribbon { margin-top:1.25rem; background:var(--learn-bg); border:1px solid var(--learn-line); border-radius:var(--r);
+                 padding:.8rem 1.1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; font-size:.88rem; }
+.policy-ribbon .v { font-family:var(--mono); color:var(--learn); font-weight:500; }
+.policy-ribbon .track { flex:1 1 140px; height:6px; background:rgba(155,140,255,.15); border-radius:3px; overflow:hidden; min-width:120px; }
+.policy-ribbon .fill { width:60%; height:100%; background:var(--learn); border-radius:3px; }
+.policy-ribbon .note { color:var(--dim); }
+
+.telemetry { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin-top:1rem; }
+.tele { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); padding:.75rem .95rem; }
+.tele .label { color:var(--faint); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; }
+.tele .value { font:500 1.25rem var(--mono); margin-top:.1rem; }
+.tele .value small { font-size:.75rem; color:var(--dim); }
+
+.workspace { display:grid; grid-template-columns:1.1fr .9fr; gap:1rem; margin-top:1rem; align-items:start; }
+
+.panel { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); display:flex; flex-direction:column; }
+.panel-head { padding:.8rem 1.1rem; border-bottom:1px solid var(--line-soft); display:flex; align-items:center; gap:.6rem;
+              font-family:var(--display); font-weight:600; font-size:.95rem; }
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--machine); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.feed { list-style:none; padding:.6rem 0; max-height:430px; overflow-y:auto; }
+.feed li { display:flex; gap:.8rem; padding:.5rem 1.1rem; font-size:.86rem; animation:slide-in .35s ease; }
+@keyframes slide-in { from { opacity:0; transform:translateY(-4px);} to { opacity:1; transform:none;} }
+.feed .t { font:400 11px var(--mono); color:var(--faint); padding-top:.2rem; flex:0 0 44px; }
+.feed .what { color:var(--dim); }
+.feed .what b { color:var(--fg); font-weight:500; }
+.feed li.you .what b { color:var(--human); }
+.feed li.reward .what b { color:var(--learn); }
+
+.chat { display:flex; flex-direction:column; max-height:560px; }
+.chat-scroll { flex:1; overflow-y:auto; padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.85rem; }
+.msg { max-width:88%; padding:.6rem .85rem; border-radius:var(--r); font-size:.89rem; line-height:1.45; }
+.msg.agent { background:var(--panel-2); border:1px solid var(--line-soft); align-self:flex-start; }
+.msg.me { background:#26314F; align-self:flex-end; }
+.msg .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:block; margin-bottom:.25rem; }
+
+.handoff { align-self:stretch; max-width:100%; background:var(--human-bg); border:1px solid var(--human-line); border-radius:var(--r);
+           padding:.85rem 1rem; animation:glow 2.6s ease-in-out infinite; }
+@keyframes glow { 0%,100% { box-shadow:0 0 0 0 rgba(242,166,90,0);} 50% { box-shadow:0 0 18px 0 rgba(242,166,90,.12);} }
+.handoff .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--human); display:block; margin-bottom:.3rem; }
+.handoff h4 { font-family:var(--display); font-size:.98rem; font-weight:600; margin-bottom:.25rem; }
+.handoff p { color:var(--dim); font-size:.85rem; }
+.handoff .detail { font-family:var(--mono); font-size:.78rem; color:var(--dim); background:rgba(0,0,0,.25);
+                   border-radius:var(--r-sm); padding:.5rem .7rem; margin:.6rem 0; }
+.handoff .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.approve { background:var(--human); color:#1A1104; font-weight:600; padding:.45rem .9rem; border-radius:var(--r-sm); }
+.approve:hover { opacity:.9; }
+.reject { border:1px solid var(--human-line); color:var(--human); padding:.45rem .9rem; border-radius:var(--r-sm); font-weight:500; }
+.reject:hover { background:rgba(242,166,90,.08); }
+.handoff.decided { animation:none; opacity:.75; }
+.handoff .verdict { font-size:.85rem; font-weight:600; }
+.handoff .verdict.ok { color:var(--green); }
+.handoff .verdict.no { color:var(--red); }
+
+.chat-input { display:flex; gap:.5rem; padding:.8rem; border-top:1px solid var(--line-soft); }
+.chat-input input { flex:1; background:var(--panel-2); border:1px solid var(--line-soft); border-radius:var(--r-sm);
+                    padding:.55rem .8rem; color:var(--fg); }
+.chat-input input::placeholder { color:var(--faint); }
+.send { background:var(--machine); color:#04211E; font-weight:600; padding:.5rem .95rem; border-radius:var(--r-sm); }
+.send:hover { opacity:.9; }
+
+/* ── create ──────────────────────────────── */
+.create-wrap { max-width:640px; margin-top:1.5rem; display:flex; flex-direction:column; gap:1.6rem; }
+.field label { display:block; font-weight:600; margin-bottom:.45rem; }
+.field .hint { color:var(--faint); font-size:.82rem; margin-top:-.3rem; margin-bottom:.55rem; }
+.field input[type=text] { width:100%; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-sm);
+                          padding:.6rem .8rem; }
+.templates { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.6rem; }
+.tpl { background:var(--panel); border:1px solid var(--line-soft); border-radius:var(--r); padding:.85rem .95rem; text-align:left;
+       display:flex; flex-direction:column; gap:.3rem; }
+.tpl:hover { border-color:var(--line); }
+.tpl.selected { border-color:var(--machine-line); background:var(--machine-bg); }
+.tpl .name { font-weight:600; }
+.tpl .desc { color:var(--dim); font-size:.8rem; }
+.autonomy { display:flex; flex-direction:column; gap:.45rem; }
+.auto-opt { display:flex; gap:.75rem; align-items:flex-start; background:var(--panel); border:1px solid var(--line-soft);
+            border-radius:var(--r); padding:.7rem .9rem; text-align:left; }
+.auto-opt:hover { border-color:var(--line); }
+.auto-opt.selected { border-color:var(--human-line); background:var(--human-bg); }
+.auto-opt .radio { width:14px; height:14px; border-radius:50%; border:2px solid var(--faint); margin-top:.2rem; flex:0 0 auto; }
+.auto-opt.selected .radio { border-color:var(--human); background:var(--human); box-shadow:inset 0 0 0 3px #201503; }
+.auto-opt .name { font-weight:600; }
+.auto-opt .desc { color:var(--dim); font-size:.82rem; }
+.notif-opts { display:flex; flex-direction:column; gap:.4rem; }
+.check { display:flex; align-items:center; gap:.6rem; color:var(--dim); font-size:.9rem; }
+.check input { accent-color:var(--machine); width:15px; height:15px; }
+.create-cta { align-self:flex-start; background:var(--fg); color:var(--ink); font-weight:600; padding:.65rem 1.3rem;
+              border-radius:var(--r-sm); }
+.create-cta:hover { opacity:.9; }
+
+/* ── toasts ──────────────────────────────── */
+#toasts { position:fixed; bottom:1.25rem; right:1.25rem; display:flex; flex-direction:column; gap:.5rem; z-index:50; }
+.toast { background:var(--panel-2); border:1px solid var(--line); border-left:3px solid var(--machine); border-radius:var(--r-sm);
+         padding:.65rem .95rem; font-size:.87rem; min-width:260px; max-width:340px; box-shadow:0 8px 24px rgba(0,0,0,.45);
+         animation:slide-in .3s ease; }
+.toast.human { border-left-color:var(--human); }
+.toast.learn { border-left-color:var(--learn); }
+.toast .who { font:500 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:block; }
+
+/* ── responsive ──────────────────────────── */
+@media (max-width:900px) {
+  .app { grid-template-columns:1fr; }
+  .side { position:static; height:auto; flex-direction:row; align-items:center; border-right:none;
+          border-bottom:1px solid var(--line-soft); padding:.6rem 1rem; gap:.35rem; overflow-x:auto; }
+  .side .spacer,.user { display:none; }
+  .logo { padding:0 .5rem 0 0; }
+  .nav-btn { width:auto; white-space:nowrap; }
+  main { padding:1.25rem 1rem 2.5rem; }
+  .workspace { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="side">
+  <div class="logo"><span class="dot"></span>Tandem</div>
+  <button class="nav-btn active" data-view="home"><span class="ico">◧</span>Agents</button>
+  <button class="nav-btn" data-view="agent"><span class="ico">⬡</span>Figma agent <span class="badge" id="nav-badge">2</span></button>
+  <button class="nav-btn" onclick="toast('learn','Training','Trajectory explorer is coming after the model finishes training.')"><span class="ico">↺</span>Trajectories</button>
+  <div class="spacer"></div>
+  <button class="new-agent" data-view="create">+ New agent</button>
+  <div class="user"><span class="avatar">DM</span> dhruv@trifetch.ai</div>
+</aside>
+
+<main>
+
+<!-- ═══ HOME ═══ -->
+<section id="view-home">
+  <div class="eyebrow">Your agents</div>
+  <h1>Evening, Dhruv</h1>
+  <p class="lede"><span class="ok">2 agents working</span> · <b id="lede-pending">2 decisions waiting for you</b> · 1 model in training</p>
+
+  <div class="cards">
+    <button class="agent-card" data-view="agent">
+      <div class="top">
+        <span class="glyph">⬡</span>
+        <div><h3>Figma agent</h3><div class="kind">Design ops · Figma</div></div>
+        <span class="pill wait">needs you</span>
+      </div>
+      <div class="meta"><span>Policy <b>v7</b></span><span>Success <b>84%</b></span><span>Today <b>132 actions</b></span></div>
+      <div class="foot"><span class="needs" id="card-pending">2 approvals waiting</span><canvas class="spark" data-trend="up" width="176" height="52"></canvas></div>
+    </button>
+
+    <button class="agent-card" onclick="toast('learn','Kalshi FIFA agent','Training in progress — open the live GRPO dashboard on port 8787 to watch.')">
+      <div class="top">
+        <span class="glyph">⚽</span>
+        <div><h3>Kalshi FIFA agent</h3><div class="kind">Prediction markets · demo.kalshi.co</div></div>
+        <span class="pill train">training</span>
+      </div>
+      <div class="meta"><span>Policy <b>v1 → v2</b></span><span>GRPO <b>step 11/40</b></span><span>Trajectories <b>100</b></span></div>
+      <div class="foot"><span>Watch live training →</span><canvas class="spark" data-trend="flat" width="176" height="52"></canvas></div>
+    </button>
+
+    <button class="agent-card" onclick="toast('','Inbox agent','Paused. Resume it from the agent page when you\'re ready.')">
+      <div class="top">
+        <span class="glyph">✉</span>
+        <div><h3>Inbox agent</h3><div class="kind">Email triage · Gmail</div></div>
+        <span class="pill off">paused</span>
+      </div>
+      <div class="meta"><span>Policy <b>v12</b></span><span>Success <b>91%</b></span><span>Today <b>—</b></span></div>
+      <div class="foot"><span>Paused by you · yesterday</span><canvas class="spark" data-trend="up2" width="176" height="52"></canvas></div>
+    </button>
+
+    <button class="agent-card" data-view="create" style="border-style:dashed; justify-content:center; align-items:center; min-height:170px; color:var(--dim); gap:.4rem;">
+      <span style="font-size:1.5rem;">+</span>
+      <span style="font-weight:600; color:var(--fg);">Create an agent</span>
+      <span style="font-size:.82rem;">Figma, browser, markets, inbox — or your own</span>
+    </button>
+  </div>
+</section>
+
+<!-- ═══ AGENT DETAIL ═══ -->
+<section id="view-agent" hidden>
+  <div class="crumbs"><button class="back" data-view="home">← All agents</button></div>
+
+  <div class="detail-head">
+    <span class="glyph">⬡</span>
+    <div>
+      <h1 style="font-size:1.35rem;">Figma agent</h1>
+      <div style="color:var(--faint); font-size:.85rem;">Design ops · connected to Figma · asks before risky actions</div>
+    </div>
+    <span class="pill wait" id="agent-pill">needs you</span>
+    <div class="head-actions">
+      <button class="ghost-btn" onclick="toast('','Figma agent','Paused. It will finish its current step and stop.')">Pause</button>
+      <button class="ghost-btn" onclick="toast('','Settings','Agent settings are mock-only in this preview.')">Settings</button>
+    </div>
+  </div>
+
+  <div class="policy-ribbon">
+    <span class="v">policy v7</span>
+    <div class="track"><div class="fill"></div></div>
+    <span class="v">v8 tonight</span>
+    <span class="note">Every decision you approve or reject becomes training signal for the next version.</span>
+  </div>
+
+  <div class="telemetry">
+    <div class="tele"><div class="label">Success rate</div><div class="value">84<small>%</small></div></div>
+    <div class="tele"><div class="label">Trajectories</div><div class="value">1,204 <small>/ 2,000 to retrain</small></div></div>
+    <div class="tele"><div class="label">Avg reward</div><div class="value">+0.31</div></div>
+    <div class="tele"><div class="label">Actions today</div><div class="value" id="tele-actions">132</div></div>
+  </div>
+
+  <div class="workspace">
+    <div class="panel">
+      <div class="panel-head"><span class="live-dot"></span>Live activity</div>
+      <ul class="feed" id="feed">
+        <li><span class="t">18:41</span><span class="what">Opened <b>Marketing site v3</b> in Figma</span></li>
+        <li><span class="t">18:42</span><span class="what">Scanned <b>214 layers</b> across 9 frames</span></li>
+        <li><span class="t">18:44</span><span class="what">Found <b>12 detached styles</b> on Pricing / Hero</span></li>
+        <li><span class="t">18:47</span><span class="what">Relinked 12 styles to <b>Design System v2</b> tokens</span></li>
+        <li class="reward"><span class="t">18:47</span><span class="what"><b>Reward +0.4</b> — relink matched your past approvals</span></li>
+        <li><span class="t">18:52</span><span class="what">Drafted rename plan for <b>48 layers</b> → token names</span></li>
+        <li class="you"><span class="t">18:55</span><span class="what"><b>Waiting on you</b> — publish is a risky action</span></li>
+      </ul>
+    </div>
+
+    <div class="panel chat">
+      <div class="panel-head">Chat with your agent</div>
+      <div class="chat-scroll" id="chat">
+        <div class="msg agent"><span class="who">Figma agent</span>I cleaned up Pricing / Hero — 12 detached styles are back on Design System v2 tokens. Next I'd like to rename 48 layers to match token names, then publish the library update.</div>
+        <div class="msg me"><span class="who">You</span>Renames are fine. Show me exactly what publishing changes before you do it.</div>
+        <div class="msg agent"><span class="who">Figma agent</span>Done — 48 layers renamed. Publishing is marked risky in my permissions, so it's your call:</div>
+
+        <div class="handoff" id="handoff-1">
+          <span class="who">Needs your call</span>
+          <h4>Publish library update v2.4</h4>
+          <p>Pushes 12 relinked styles and 48 renames to everyone using Design System v2. Affects 6 team files.</p>
+          <div class="detail">+ 12 styles relinked → primary/500, surface/200<br>+ 48 layers renamed → token names<br>− 0 deletions</div>
+          <div class="actions">
+            <button class="approve" onclick="decide('handoff-1', true)">Approve &amp; publish</button>
+            <button class="reject" onclick="decide('handoff-1', false)">Reject</button>
+          </div>
+        </div>
+
+        <div class="handoff" id="handoff-2">
+          <span class="who">Needs your call</span>
+          <h4>Delete 3 unused components</h4>
+          <p>badge/legacy, btn/ghost-old, icon/spark-v1 — no instances found in the last 90 days.</p>
+          <div class="actions">
+            <button class="approve" onclick="decide('handoff-2', true)">Approve &amp; delete</button>
+            <button class="reject" onclick="decide('handoff-2', false)">Reject</button>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input">
+        <input id="chat-box" type="text" placeholder="Tell your agent anything…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CREATE ═══ -->
+<section id="view-create" hidden>
+  <div class="crumbs"><button class="back" data-view="home">← All agents</button></div>
+  <div class="eyebrow">New agent</div>
+  <h1>Create an agent</h1>
+  <p class="lede">Pick what it works on, decide how much it can do alone, and how it reaches you. It starts cautious and earns autonomy as its policy improves.</p>
+
+  <div class="create-wrap">
+    <div class="field">
+      <label for="agent-name">Name</label>
+      <input id="agent-name" type="text" placeholder="e.g. Figma cleanup agent" value="Figma cleanup agent">
+    </div>
+
+    <div class="field">
+      <label>Works on</label>
+      <div class="templates" id="templates">
+        <button class="tpl selected"><span class="name">⬡ Figma</span><span class="desc">Design ops — tokens, renames, library hygiene</span></button>
+        <button class="tpl"><span class="name">🌐 Browser</span><span class="desc">Any website — forms, research, workflows</span></button>
+        <button class="tpl"><span class="name">📈 Markets</span><span class="desc">Prediction markets — powered by your GRPO model</span></button>
+        <button class="tpl"><span class="name">✉ Inbox</span><span class="desc">Email triage — label, draft, archive</span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How much can it do alone?</label>
+      <p class="hint">You can change this anytime. Risky actions always show a diff first.</p>
+      <div class="autonomy" id="autonomy">
+        <button class="auto-opt"><span class="radio"></span><span><span class="name">Watch mode</span><br><span class="desc">It only suggests. Nothing runs until you approve it.</span></span></button>
+        <button class="auto-opt selected"><span class="radio"></span><span><span class="name">Ask before risky actions</span><br><span class="desc">Routine work runs on its own; publishing, deleting, and spending wait for you.</span></span></button>
+        <button class="auto-opt"><span class="radio"></span><span><span class="name">Autonomous</span><br><span class="desc">Runs everything and reports back. Best once the policy has earned your trust.</span></span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How it reaches you</label>
+      <div class="notif-opts">
+        <label class="check"><input type="checkbox" checked> Notify me when a decision is waiting</label>
+        <label class="check"><input type="checkbox" checked> Notify me when a new policy version ships</label>
+        <label class="check"><input type="checkbox"> Send a daily digest of everything it did</label>
+      </div>
+    </div>
+
+    <button class="create-cta" onclick="createAgent()">Create agent</button>
+  </div>
+</section>
+
+</main>
+</div>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+/* ── view switching ── */
+const views = { home:'view-home', agent:'view-agent', create:'view-create' };
+function show(view) {
+  Object.values(views).forEach(id => document.getElementById(id).hidden = true);
+  document.getElementById(views[view]).hidden = false;
+  document.querySelectorAll('.nav-btn[data-view]').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('[data-view]').forEach(el =>
+  el.addEventListener('click', () => show(el.dataset.view)));
+
+/* ── pending-approval counter ── */
+let pending = 2;
+function renderPending() {
+  const badge = document.getElementById('nav-badge');
+  badge.textContent = pending; badge.style.display = pending ? '' : 'none';
+  document.getElementById('lede-pending').textContent =
+    pending ? `${pending} decision${pending>1?'s':''} waiting for you` : 'nothing waiting on you';
+  document.getElementById('card-pending').textContent =
+    pending ? `${pending} approval${pending>1?'s':''} waiting` : 'All clear';
+  const pill = document.getElementById('agent-pill');
+  if (!pending) { pill.textContent = 'running'; pill.className = 'pill run'; }
+}
+
+/* ── approve / reject ── */
+function decide(id, ok) {
+  const card = document.getElementById(id);
+  if (card.classList.contains('decided')) return;
+  card.classList.add('decided');
+  const title = card.querySelector('h4').textContent;
+  card.querySelector('.actions').innerHTML = ok
+    ? '<span class="verdict ok">✓ Approved — running now</span>'
+    : '<span class="verdict no">✕ Rejected — logged as a lesson for policy v8</span>';
+  pending--; renderPending();
+  addFeed(ok ? `<b>You approved:</b> ${title}` : `<b>You rejected:</b> ${title}`, 'you');
+  setTimeout(() => {
+    agentSay(ok
+      ? `${title} — done. I'll treat similar cases as safe to propose again.`
+      : `Understood, holding off. I logged why so policy v8 stops suggesting this.`);
+    if (ok) addFeed(`<b>Reward +0.8</b> — approved action completed`, 'reward');
+  }, 900);
+  toast(ok ? '' : 'human', 'Figma agent', ok ? `${title} — approved and running.` : `${title} — rejected. Lesson saved.`);
+}
+
+/* ── chat ── */
+function agentSay(text) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.innerHTML = '<span class="who">Figma agent</span>' + text;
+  chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
+}
+function sendChat() {
+  const box = document.getElementById('chat-box');
+  const text = box.value.trim(); if (!text) return;
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'msg me';
+  div.innerHTML = '<span class="who">You</span>';
+  div.appendChild(document.createTextNode(text));
+  chat.appendChild(div); box.value = ''; chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => agentSay("Noted — I'll factor that in. (This preview isn't wired to the model yet; once training on port 8787 finishes, replies come from your fine-tuned policy.)"), 800);
+}
+
+/* ── live feed ticker ── */
+const tickerItems = [
+  ['Scanning components in <b>Design System v2</b>', ''],
+  ['Matched <b>8 buttons</b> to primary/500 token', ''],
+  ['Skipped locked frame <b>Legal / Terms</b>', ''],
+  ['<b>Reward +0.2</b> — token match confirmed', 'reward'],
+  ['Checking <b>6 team files</b> for stale instances', ''],
+];
+let tick = 0, actions = 132;
+function addFeed(html, cls) {
+  const feed = document.getElementById('feed');
+  const li = document.createElement('li');
+  if (cls) li.className = cls;
+  const now = new Date();
+  li.innerHTML = `<span class="t">${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span><span class="what">${html}</span>`;
+  feed.appendChild(li); feed.scrollTop = feed.scrollHeight;
+}
+setInterval(() => {
+  const [html, cls] = tickerItems[tick++ % tickerItems.length];
+  addFeed(html, cls);
+  document.getElementById('tele-actions').textContent = ++actions;
+}, 7000);
+
+/* ── toasts ── */
+function toast(kind, who, text) {
+  const wrap = document.getElementById('toasts');
+  const div = document.createElement('div');
+  div.className = 'toast' + (kind ? ' ' + kind : '');
+  div.innerHTML = `<span class="who">${who}</span>${text}`;
+  wrap.appendChild(div);
+  setTimeout(() => div.remove(), 6000);
+}
+setTimeout(() => toast('learn', 'Kalshi FIFA agent', 'GRPO training passed step 12/40 — reward trend holding.'), 12000);
+setTimeout(() => toast('human', 'Figma agent', 'Still waiting on your call: publish library v2.4.'), 30000);
+
+/* ── create flow ── */
+function pickOne(containerId, cls) {
+  document.getElementById(containerId).addEventListener('click', e => {
+    const btn = e.target.closest('.' + cls); if (!btn) return;
+    btn.parentElement.querySelectorAll('.' + cls).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+}
+pickOne('templates', 'tpl'); pickOne('autonomy', 'auto-opt');
+function createAgent() {
+  const name = document.getElementById('agent-name').value || 'New agent';
+  toast('', name, 'Created in watch mode. It starts learning from your first approvals.');
+  show('home');
+}
+
+/* ── sparklines ── */
+const trends = {
+  up:   [3,4,3,5,6,5,7,8,7,9,10,11],
+  flat: [5,5,6,5,5,4,5,6,5,5,6,5],
+  up2:  [2,3,5,4,6,7,6,8,9,8,10,10],
+};
+document.querySelectorAll('.spark').forEach(c => {
+  const ctx = c.getContext('2d'), d = trends[c.dataset.trend] || trends.flat;
+  const w = c.width, h = c.height, max = Math.max(...d), min = Math.min(...d);
+  ctx.strokeStyle = '#53D8CB'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.beginPath();
+  d.forEach((v, i) => {
+    const x = i / (d.length - 1) * (w - 6) + 3;
+    const y = h - 6 - (v - min) / (max - min || 1) * (h - 12);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+});
+
+renderPending();
+</script>
+</body>
+</html>

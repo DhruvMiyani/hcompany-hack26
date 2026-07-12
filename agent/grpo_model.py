@@ -33,7 +33,7 @@ MIN_SAMPLES = 5   # minimum resolved bets before we train
 
 # Fast hackathon config — tune via env if needed
 NUM_GENERATIONS = int(os.getenv("GRPO_NUM_GENERATIONS", "2"))
-MAX_COMPLETION  = int(os.getenv("GRPO_MAX_COMPLETION", "128"))
+MAX_COMPLETION  = int(os.getenv("GRPO_MAX_COMPLETION", "192"))
 MAX_TRAIN_STEPS = int(os.getenv("GRPO_MAX_STEPS", "40"))
 
 
@@ -155,7 +155,7 @@ class GRPOBettingModel:
             return False
 
         try:
-            self._load()
+            self._load(trainable=True)
         except Exception as e:
             print(f"  [GRPO] Load error: {e}", file=sys.stderr)
             return False
@@ -170,11 +170,15 @@ class GRPOBettingModel:
             file=sys.stderr,
         )
 
-        reward_map = {t["prompt"]: float(t["reward"]) for t in capped}
-
+        # GRPO needs the reward to score each COMPLETION — the advantage is the
+        # spread of rewards within a group of G samples of the same prompt. A
+        # prompt-keyed reward gives every sample in a group the same value,
+        # zero advantage, and no gradient (grad_norm=0 for the whole run).
         def reward_fn(completions, prompts=None, **kwargs):
-            prompts = prompts or []
-            return [reward_map.get(p, 0.0) for p in prompts]
+            prompts = prompts or [""] * len(completions)
+            return [
+                _score_completion(p, c) for p, c in zip(prompts, completions)
+            ]
 
         dataset = Dataset.from_dict({"prompt": [t["prompt"] for t in capped]})
 
@@ -213,7 +217,7 @@ class GRPOBettingModel:
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
-    def _load(self):
+    def _load(self, trainable: bool = False):
         if self._model is not None:
             return
 
@@ -240,7 +244,12 @@ class GRPOBettingModel:
         adapter_path = WEIGHTS_DIR / "adapter"
         if adapter_path.exists():
             print("  [GRPO] Loading fine-tuned LoRA adapter...", file=sys.stderr)
-            self._model  = PeftModel.from_pretrained(base, str(adapter_path))
+            # is_trainable must be True to CONTINUE training from a saved
+            # adapter — the peft default freezes the LoRA weights, which would
+            # zero the gradient on every retrain round.
+            self._model  = PeftModel.from_pretrained(
+                base, str(adapter_path), is_trainable=trainable
+            )
             self._trained = True
         else:
             lora_cfg = LoraConfig(
@@ -262,6 +271,99 @@ class GRPOBettingModel:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+_MARKET_LINE = None  # compiled lazily
+
+
+def _parse_market_lines(prompt: str) -> dict:
+    """
+    Recover the market table from a training prompt.
+
+    Both simulator and live prompts render markets as:
+      - [category] TICKER | Yes=0.57 No=0.43 | Vol=$1,234,567
+    """
+    global _MARKET_LINE
+    import re
+    if _MARKET_LINE is None:
+        _MARKET_LINE = re.compile(
+            r"-\s*\[(?P<cat>[^\]]+)\]\s*(?P<ticker>\S+)"
+            r"\s*\|\s*Yes=(?P<yes>[\d.]+)\s*No=(?P<no>[\d.]+)"
+            r"\s*\|\s*Vol=\$?(?P<vol>[\d,?]+)"
+        )
+    markets = {}
+    for m in _MARKET_LINE.finditer(prompt):
+        vol_raw = m.group("vol").replace(",", "")
+        markets[m.group("ticker")] = {
+            "category": m.group("cat"),
+            "yes": float(m.group("yes")),
+            "no": float(m.group("no")),
+            "volume": float(vol_raw) if vol_raw.isdigit() else 0.0,
+        }
+    return markets
+
+
+def _score_completion(prompt, completion) -> float:
+    """
+    Deterministic shaped reward for one sampled bet decision.
+
+    Teaches, in order of magnitude: emit valid actionable JSON, pick a real
+    market from the prompt, prefer liquid match_winner/advance markets, keep
+    confidence near the implied price, and size stakes Kelly-ish.
+    """
+    if isinstance(prompt, list):     # conversational form → concatenate content
+        prompt = " ".join(str(m.get("content", "")) for m in prompt if isinstance(m, dict))
+    if isinstance(completion, list):
+        completion = " ".join(str(m.get("content", "")) for m in completion if isinstance(m, dict))
+
+    text = str(completion)
+    markets = _parse_market_lines(str(prompt))
+    decision = _parse_decision(text)
+
+    # ── Dense shaping for the unparseable case ────────────────────────────────
+    # A hard -1.0 cliff for any non-parsing output means a truncated completion
+    # that already emitted the right ticker scores the same as pure noise, so
+    # GRPO sees no gradient toward "closer to valid". Give graded partial credit
+    # for the structural signals that show the model is on the right track.
+    if decision is None:
+        partial = -1.0
+        if any(t in text for t in markets):          # named a real ticker
+            partial += 0.35
+        if '"direction"' in text and ("Yes" in text or "No" in text):
+            partial += 0.15
+        if '"amount"' in text or '"confidence"' in text:
+            partial += 0.10
+        if text.count("{") >= 1:                      # started a JSON object
+            partial += 0.05
+        return round(partial, 4)
+
+    if decision.skip:
+        return -0.1                  # skipping is safe but earns nothing
+
+    info = markets.get(decision.ticker or "")
+    if info is None:
+        return -0.6                  # parsed, but hallucinated ticker
+
+    reward = 0.2                     # valid, actionable, real market
+
+    vol = info["volume"]
+    if vol > 1_000_000:
+        reward += 0.15
+    elif vol > 100_000:
+        reward += 0.05
+    elif vol < 50_000:
+        reward -= 0.20
+
+    if info["category"] in ("match_winner", "advance"):
+        reward += 0.10
+
+    implied = info["yes"] if decision.direction == "Yes" else info["no"]
+    reward += max(-0.20, 0.20 - 0.6 * abs(decision.confidence - implied))
+
+    kelly_ideal = max(0.0, 2 * implied - 1.0)
+    reward += 0.10 if abs(decision.amount / 5.0 - kelly_ideal) < 0.20 else -0.05
+
+    return round(reward, 4)
+
 
 def _build_prompt(
     markets: list[Market],

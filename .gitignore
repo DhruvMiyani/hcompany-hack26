@@ -7,3 +7,6 @@ data/agent_memory.db
 *.db-shm
 *.db-wal
 .DS_Store
+
+# GRPO model weights — large binaries, reproducible via `python main.py simulate`
+data/grpo_weights/

@@ -297,8 +297,43 @@ def cmd_train():
     grpo.train(trajectories)
 
 
+def cmd_refit():
+    """Continue GRPO training from the current adapter, reusing saved trajectories.
+
+    Fast improvement round — no re-simulation, no market fetch. Loads
+    data/trajectories.json and runs more GRPO steps on top of the existing
+    adapter. Tune depth with GRPO_MAX_STEPS / GRPO_NUM_GENERATIONS env vars.
+    """
+    import json
+    memory.init_db()
+
+    traj_path = Path("data") / "trajectories.json"
+    if not traj_path.exists():
+        console.print("[yellow]No data/trajectories.json — run 'simulate' first.[/yellow]")
+        return
+
+    trajectories = json.loads(traj_path.read_text())
+    from agent.grpo_model import get_model, WEIGHTS_DIR
+
+    cont = (WEIGHTS_DIR / "adapter").exists()
+    console.print(Panel(
+        f"[bold cyan]GRPO Refit[/bold cyan]\n\n"
+        f"  Trajectories : {len(trajectories)} (reused, no re-sim)\n"
+        f"  Continue from: {'existing adapter ✓' if cont else 'base model (no adapter yet)'}\n"
+        f"  Steps        : {os.getenv('GRPO_MAX_STEPS', '40')}  |  "
+        f"G = {os.getenv('GRPO_NUM_GENERATIONS', '2')}",
+        title="Refit / Extra Epoch",
+    ))
+
+    grpo = get_model()
+    if grpo.train(trajectories):
+        console.print("[green]Refit complete — adapter updated.[/green]")
+    else:
+        console.print("[yellow]Refit skipped — check logs.[/yellow]")
+
+
 COMMANDS = {"bet": cmd_bet, "check": cmd_check, "stats": cmd_stats,
-            "simulate": cmd_simulate, "train": cmd_train}
+            "simulate": cmd_simulate, "train": cmd_train, "refit": cmd_refit}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "stats"

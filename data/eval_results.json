@@ -1,0 +1,36 @@
+{
+  "base": {
+    "n": 8,
+    "valid_json_rate": 1.0,
+    "actionable_rate": 1.0,
+    "mean_reward": -0.6,
+    "rewards": [
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6
+    ],
+    "sample_completion": "{\"skip\": false, \"ticker\": \"KXWC\", \"direction\": \"No\", \"amount\": 0.34, \"confidence\": 0.67, \"reasoning\": \"The price of KXWCADVANCE-26JUL11ARGSUI-ARG is significantly mispriced compared to the real-world probabilities.\"}"
+  },
+  "grpo": {
+    "n": 8,
+    "valid_json_rate": 1.0,
+    "actionable_rate": 1.0,
+    "mean_reward": -0.18125,
+    "rewards": [
+      0.6,
+      0.6,
+      -0.6,
+      0.35,
+      -0.6,
+      -0.6,
+      -0.6,
+      -0.6
+    ],
+    "sample_completion": "{\"skip\": false, \"ticker\": \"KXWCADVANCE-26JUL11ARGSUI-ARG\", \"direction\": \"Yes\", \"amount\": 0.85, \"confidence\": 0.85, \"reasoning\": \"This is a strong favorite given the high odds of victory.\"}"
+  }
+}
