@@ -127,8 +127,8 @@ td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric
 
 <div class="hero">
   <span class="eyebrow">System architecture</span>
-  <h1>Two models decide.<br>Two loops <em>learn.</em></h1>
-  <p class="lede">A GRPO-fine-tuned policy picks the bet, a 35B validator sanity-checks it, a browser agent places it — and two learning loops (offline on real settled markets, online on our own bets) keep making the policy better.</p>
+  <h1>XGBoost finds the edge.<br>Two loops <em>learn.</em></h1>
+  <p class="lede">The research-loop champion — an XGBoost trained on 1,400+ real settled markets — scores every live market for edge against the price and decides in under a second. A GRPO-fine-tuned LLM and a 35B validator stand as fallback, a browser agent places the bet, and two learning loops keep crowning better champions.</p>
 </div>
 
 <!-- live bet pipeline -->
@@ -136,19 +136,19 @@ td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric
   <div class="sec-head"><span class="idx">01</span><h2>The live bet pipeline</h2><span class="tail">runs on “Bet for me”</span></div>
   <div class="flow">
     <div class="node">
-      <div class="ph">Phase 1 · Data</div><h3>Kalshi REST</h3>
-      <p>Discovers open World Cup markets with real prices &amp; liquidity. No browser needed to read.</p>
+      <div class="ph">Phase 1 · Data</div><h3>Kalshi REST + Elo</h3>
+      <p>Open World Cup markets with price, 24h momentum, liquidity — joined with live team Elo ratings.</p>
       <span class="chip">~57 markets → top 15</span>
     </div>
     <div class="node">
-      <div class="ph">Phase 2A · Decide</div><h3>GRPO policy</h3>
-      <p>Qwen2.5-0.5B + LoRA picks one market by short id (M3), a direction and a stake.</p>
-      <span class="chip">our fine-tune</span>
+      <div class="ph">Phase 2 · Decide</div><h3>XGBoost champion</h3>
+      <p>Scores every market for P(settles YES); bets the largest disagreement with the price &gt; 5¢, Kelly-sized. Decision in &lt;1s.</p>
+      <span class="chip">F1 0.653 · edge ROI +67%</span>
     </div>
     <div class="node">
-      <div class="ph">Phase 2B · Validate</div><h3>Holo 35B</h3>
-      <p>Independent decision as sanity check &amp; fallback. Agreement boosts confidence; invalid tickers get vetoed.</p>
-      <span class="chip">holo3-1-35b-a3b</span>
+      <div class="ph">Fallback · LLM</div><h3>GRPO 0.5B + Holo 35B</h3>
+      <p>If no market clears the edge margin, the GRPO-fine-tuned policy decides with Holo 35B validating and vetoing invalid tickers.</p>
+      <span class="chip">only when XGB skips</span>
     </div>
     <div class="node human">
       <div class="ph">Phase 3 · Execute</div><h3>Browser agent</h3>
@@ -156,7 +156,7 @@ td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric
       <span class="chip">h/web-surfer-flash</span>
     </div>
   </div>
-  <div class="loopback">…settlement → reward signal → retraining ↩</div>
+  <div class="loopback">…settlement → reward signal → research loop → next champion ↩</div>
 </section>
 
 <!-- the two learning loops -->
@@ -194,10 +194,13 @@ td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric
 <section class="sec">
   <div class="sec-head"><span class="idx">03</span><h2>What the model optimizes</h2></div>
   <div class="objective">
-    <h3>Risk-adjusted profit from calibrated, well-sized bets</h3>
-    <p>Reward = <code>P&amp;L per $ staked</code> + calibration (confident-and-wrong −0.40) + Kelly-style sizing bonus + liquidity bonus.
-    GRPO samples 4 decisions per market state and shifts probability toward those that beat the group average — no critic network.
-    The bar to clear: the market price itself. A predictor only has edge if it beats the <b>implied-price baseline</b> below.</p>
+    <h3>Be right where the crowd is wrong</h3>
+    <p><b>XGBoost (live decision-maker):</b> predict <code>P(settles YES)</code> from price, momentum, Elo edge, liquidity and sibling-market structure —
+    then bet <b>only where the model disagrees with the price by &gt; 5¢</b>, staked by Kelly. Agreeing with the price earns nothing by definition;
+    all profit comes from winning disagreements (63% of 212 on held-out data).
+    <br><br><b>GRPO fallback (LLM):</b> reward = <code>P&amp;L per $ staked</code> + calibration + Kelly sizing + liquidity;
+    trained by sampling 4 decisions per state and favoring those that beat the group average.
+    The bar for both: the <b>implied-price baseline</b> below — a model only has edge if it beats the market's own price.</p>
   </div>
 </section>
 
