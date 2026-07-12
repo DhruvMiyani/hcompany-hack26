@@ -1,0 +1,43 @@
+{
+  "n_test_total": 374,
+  "n_evaluated": 40,
+  "implied_baseline": {
+    "n": 40,
+    "accuracy": 0.825,
+    "precision": 1.0,
+    "recall": 0.3636,
+    "f1": 0.5333,
+    "confusion": {
+      "tp": 4,
+      "tn": 29,
+      "fp": 0,
+      "fn": 7
+    },
+    "trading": {
+      "n_bets": 40,
+      "hit_rate": 0.825,
+      "pnl": 4.12,
+      "roi": 0.103
+    }
+  },
+  "grpo_policy": {
+    "n": 31,
+    "accuracy": 0.3548,
+    "precision": 0.3548,
+    "recall": 1.0,
+    "f1": 0.5238,
+    "confusion": {
+      "tp": 11,
+      "tn": 0,
+      "fp": 20,
+      "fn": 0
+    },
+    "trading": {
+      "n_bets": 31,
+      "hit_rate": 0.3548,
+      "pnl": 1.35,
+      "roi": 0.0435
+    },
+    "coverage": 0.775
+  }
+}

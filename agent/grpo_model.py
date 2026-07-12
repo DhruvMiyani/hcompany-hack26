@@ -129,11 +129,13 @@ class GRPOBettingModel:
 
     # ── Training ──────────────────────────────────────────────────────────────
 
-    def train(self, trajectories: list[dict]) -> bool:
+    def train(self, trajectories: list[dict], reward_fn=None) -> bool:
         """
         Run GRPO fine-tuning on collected bet trajectories.
 
         Each trajectory must have: {prompt, reward}
+        reward_fn(prompt, completion) -> float overrides the default
+        score_completion shaping — e.g. to grade against settled outcomes.
         Returns True if training ran, False if skipped.
         """
         if len(trajectories) < MIN_SAMPLES:
@@ -173,11 +175,11 @@ class GRPOBettingModel:
         # spread of rewards within a group of G samples of the same prompt. A
         # prompt-keyed reward gives every sample in a group the same value,
         # zero advantage, and no gradient (grad_norm=0 for the whole run).
-        def reward_fn(completions, prompts=None, **kwargs):
+        score = reward_fn or score_completion
+
+        def trainer_reward_fn(completions, prompts=None, **kwargs):
             prompts = prompts or [""] * len(completions)
-            return [
-                score_completion(p, c) for p, c in zip(prompts, completions)
-            ]
+            return [score(p, c) for p, c in zip(prompts, completions)]
 
         dataset = Dataset.from_dict({"prompt": [t["prompt"] for t in capped]})
 
@@ -199,7 +201,7 @@ class GRPOBettingModel:
 
         trainer = GRPOTrainer(
             model=self._model,
-            reward_funcs=reward_fn,
+            reward_funcs=trainer_reward_fn,
             args=cfg,
             train_dataset=dataset,
             processing_class=self._tokenizer,

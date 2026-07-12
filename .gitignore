@@ -12,3 +12,4 @@ data/agent_memory.db
 # is committed so the team can run the fine-tuned policy without retraining
 data/grpo_weights/*
 !data/grpo_weights/adapter/
+data/research_run.log

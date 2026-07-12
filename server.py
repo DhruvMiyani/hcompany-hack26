@@ -32,6 +32,7 @@ load_dotenv(ROOT / ".env")
 
 UI_FILE = ROOT / "platform" / "control.html"      # simple control panel (default)
 DECK_FILE = ROOT / "platform" / "index.html"      # full Tandem deck
+ARCH_FILE = ROOT / "platform" / "architecture.html"  # architecture explainer
 
 
 def _kalshi():
@@ -129,6 +130,26 @@ def bet_watch() -> dict:
     return out
 
 
+def learning_status() -> dict:
+    """Offline-learning artifacts for the architecture page."""
+    def _load(name):
+        p = ROOT / "data" / name
+        try:
+            return json.loads(p.read_text()) if p.exists() else None
+        except json.JSONDecodeError:
+            return None
+    train = _load("dataset_train.json") or []
+    test = _load("dataset_test.json") or []
+    log = _load("research_log.json") or []
+    return {
+        "dataset": {"train": len(train), "test": len(test),
+                    "events": len({e.get("event") for e in train + test})},
+        "offline_eval": _load("offline_eval.json"),
+        "trend_rules": _load("trend_rules.json") or [],
+        "research_log": log[-6:],
+    }
+
+
 def markets_snapshot() -> dict:
     """Parse the last bet run's log for the markets that were sent to the model."""
     import re
@@ -169,6 +190,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._html(UI_FILE.read_text())
             elif path in ("/deck", "/index.html"):
                 self._html(DECK_FILE.read_text())
+            elif path in ("/arch", "/architecture", "/architecture.html"):
+                self._html(ARCH_FILE.read_text())
+            elif path == "/api/learning":
+                self._json(learning_status())
             elif path == "/api/stats":
                 self._json(stats())
             elif path == "/api/model":

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autonomous Trading — architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#F3F1EA; --paper-2:#FCFBF7; --tint:#ECE9E0;
+  --ink:#15151A; --ink-2:#3C3B40; --dim:#6C6960; --faint:#A6A091;
+  --rule:#E2DDD1; --rule-strong:#D0CABA;
+  --violet:#5B45E0; --violet-2:#7A68F0; --violet-tint:#ECE9FC;
+  --ochre:#A96A12; --ochre-tint:#F6ECD9;
+  --green:#1C7A4C; --green-tint:#E3F1E8;
+  --red:#BF3A2E; --red-tint:#F7E7E3;
+  --r:10px; --r-sm:6px;
+  --display:'Fraunces',Georgia,serif;
+  --body:'Instrument Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+* { box-sizing:border-box; margin:0; }
+body { background:var(--paper); color:var(--ink); font:15px/1.55 var(--body); -webkit-font-smoothing:antialiased; }
+a { color:inherit; }
+.eyebrow { font:500 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--violet); }
+.mono { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+.topbar { position:sticky; top:0; z-index:40; background:rgba(243,241,234,.85); backdrop-filter:blur(12px);
+          border-bottom:1px solid var(--rule); display:flex; align-items:center; gap:1.5rem; padding:0 2rem; height:64px; }
+.wordmark { font:600 15px var(--mono); letter-spacing:.28em; text-transform:uppercase; display:flex; align-items:center; gap:.6rem; }
+.wordmark .orb { width:11px; height:11px; border-radius:50%;
+                 background:radial-gradient(circle at 35% 30%,var(--violet-2),var(--violet)); box-shadow:0 0 0 3px var(--violet-tint); }
+.top-link { font-size:.85rem; color:var(--violet); font-weight:500; text-decoration:none; margin-left:auto; }
+.top-link:hover { text-decoration:underline; }
+
+main { max-width:1080px; margin:0 auto; padding:2.75rem 2rem 4rem; }
+.hero { padding-bottom:1.75rem; margin-bottom:2.25rem; border-bottom:1px solid var(--rule); }
+h1 { font-family:var(--display); font-weight:500; font-size:clamp(2rem,4.5vw,3rem); line-height:1.05; letter-spacing:-.02em; }
+h1 em { font-style:italic; color:var(--violet); }
+.lede { color:var(--dim); margin-top:1rem; max-width:62ch; font-size:1.02rem; }
+
+.sec { margin-bottom:2.75rem; }
+.sec-head { display:flex; align-items:baseline; gap:.8rem; margin-bottom:1.1rem; }
+.sec-head h2 { font-family:var(--display); font-weight:500; font-size:1.35rem; letter-spacing:-.01em; }
+.sec-head .idx { font:500 12px var(--mono); color:var(--faint); }
+.sec-head .tail { margin-left:auto; font:400 12px var(--mono); color:var(--faint); }
+
+/* pipeline flow */
+.flow { display:flex; align-items:stretch; gap:0; overflow-x:auto; padding-bottom:.5rem; }
+.node { flex:1 1 0; min-width:150px; background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r);
+        padding:.9rem 1rem; position:relative; }
+.node + .node { margin-left:2.1rem; }
+.node + .node::before { content:'→'; position:absolute; left:-1.55rem; top:50%; transform:translateY(-50%);
+                        color:var(--faint); font-size:1.15rem; }
+.node .ph { font:500 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--violet); }
+.node.human .ph { color:var(--ochre); }
+.node h3 { font-family:var(--display); font-weight:600; font-size:1.02rem; margin:.3rem 0 .25rem; }
+.node p { font-size:.8rem; color:var(--dim); }
+.node .chip { display:inline-block; margin-top:.5rem; font:500 10.5px var(--mono); color:var(--ink-2);
+              background:var(--tint); border-radius:999px; padding:.1rem .5rem; }
+.loopback { margin-top:.65rem; font:400 12px var(--mono); color:var(--faint); text-align:right; }
+
+/* two loops grid */
+.loops { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+.loop-card { background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r); overflow:hidden; }
+.loop-card.offline { border-left:3px solid var(--violet); }
+.loop-card.online { border-left:3px solid var(--ochre); }
+.loop-card .head { padding:.9rem 1.15rem .7rem; border-bottom:1px solid var(--rule); }
+.loop-card .head h3 { font-family:var(--display); font-weight:600; font-size:1.1rem; }
+.loop-card .head p { font-size:.82rem; color:var(--dim); margin-top:.15rem; }
+.steps { list-style:none; padding:.5rem 0; }
+.steps li { display:flex; gap:.75rem; padding:.5rem 1.15rem; font-size:.88rem; align-items:baseline; }
+.steps .k { font:500 11px var(--mono); color:var(--faint); flex:0 0 1.4rem; }
+.steps b { font-weight:600; }
+.steps .out { color:var(--dim); }
+
+/* metrics */
+.metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); border:1px solid var(--rule);
+           border-radius:var(--r); overflow:hidden; background:var(--paper-2); }
+.metric { padding:1rem 1.15rem; border-right:1px solid var(--rule); border-bottom:1px solid var(--rule); }
+.metric .l { font:500 10.5px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+.metric .n { font-family:var(--display); font-weight:500; font-size:1.7rem; margin-top:.3rem; }
+.metric .n.pos { color:var(--green); } .metric .n.neg { color:var(--red); } .metric .n.vio { color:var(--violet); }
+.metric .s { font-size:.76rem; color:var(--dim); margin-top:.2rem; }
+
+table { width:100%; border-collapse:collapse; font-size:.9rem; background:var(--paper-2);
+        border:1px solid var(--rule); border-radius:var(--r); overflow:hidden; }
+th { text-align:left; font:500 10.5px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--faint);
+     padding:.75rem 1.1rem; border-bottom:1px solid var(--rule); }
+td { padding:.7rem 1.1rem; border-bottom:1px solid var(--rule); color:var(--ink-2); }
+tbody tr:last-child td { border-bottom:none; }
+td.num, th.num { text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.pos { color:var(--green); } .neg { color:var(--red); }
+.tag { font:500 10px var(--mono); padding:.12rem .5rem; border-radius:999px; }
+.tag.keep { color:var(--green); background:var(--green-tint); }
+.tag.drop { color:var(--dim); background:var(--tint); }
+
+.objective { background:var(--paper-2); border:1px solid var(--rule); border-left:3px solid var(--green);
+             border-radius:var(--r); padding:1.1rem 1.3rem; }
+.objective h3 { font-family:var(--display); font-weight:600; font-size:1.1rem; margin-bottom:.4rem; }
+.objective p { color:var(--ink-2); font-size:.95rem; max-width:70ch; }
+.objective code { font:500 12.5px var(--mono); background:var(--tint); border-radius:4px; padding:.1rem .4rem; }
+
+.rules { list-style:none; display:grid; gap:.5rem; }
+.rules li { background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r-sm);
+            padding:.6rem .9rem; font-size:.88rem; color:var(--ink-2); }
+.rules li::before { content:'◆ '; color:var(--violet); font-size:.7rem; }
+
+@media (max-width:860px) {
+  .loops { grid-template-columns:1fr; }
+  .flow { flex-direction:column; }
+  .node + .node { margin-left:0; margin-top:1.6rem; }
+  .node + .node::before { content:'↓'; left:50%; top:-1.35rem; transform:translateX(-50%); }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wordmark"><span class="orb"></span>Autonomous&nbsp;Trading</div>
+  <a class="top-link" href="/deck">← Command center</a>
+</header>
+
+<main>
+
+<div class="hero">
+  <span class="eyebrow">System architecture</span>
+  <h1>Two models decide.<br>Two loops <em>learn.</em></h1>
+  <p class="lede">A GRPO-fine-tuned policy picks the bet, a 35B validator sanity-checks it, a browser agent places it — and two learning loops (offline on real settled markets, online on our own bets) keep making the policy better.</p>
+</div>
+
+<!-- live bet pipeline -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">01</span><h2>The live bet pipeline</h2><span class="tail">runs on “Bet for me”</span></div>
+  <div class="flow">
+    <div class="node">
+      <div class="ph">Phase 1 · Data</div><h3>Kalshi REST</h3>
+      <p>Discovers open World Cup markets with real prices &amp; liquidity. No browser needed to read.</p>
+      <span class="chip">~57 markets → top 15</span>
+    </div>
+    <div class="node">
+      <div class="ph">Phase 2A · Decide</div><h3>GRPO policy</h3>
+      <p>Qwen2.5-0.5B + LoRA picks one market by short id (M3), a direction and a stake.</p>
+      <span class="chip">our fine-tune</span>
+    </div>
+    <div class="node">
+      <div class="ph">Phase 2B · Validate</div><h3>Holo 35B</h3>
+      <p>Independent decision as sanity check &amp; fallback. Agreement boosts confidence; invalid tickers get vetoed.</p>
+      <span class="chip">holo3-1-35b-a3b</span>
+    </div>
+    <div class="node human">
+      <div class="ph">Phase 3 · Execute</div><h3>Browser agent</h3>
+      <p>H Company web-surfer finds the market by title, picks the exact outcome row, places the bet. Watch it live.</p>
+      <span class="chip">h/web-surfer-flash</span>
+    </div>
+  </div>
+  <div class="loopback">…settlement → reward signal → retraining ↩</div>
+</section>
+
+<!-- the two learning loops -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">02</span><h2>The two learning loops</h2></div>
+  <div class="loops">
+    <div class="loop-card offline">
+      <div class="head">
+        <h3>Offline — learn from history</h3>
+        <p>Real settled markets, instant honest grading. <span class="mono" id="ds-line">dataset loading…</span></p>
+      </div>
+      <ul class="steps">
+        <li><span class="k">1</span><span><b>Dataset</b> — settled KXWC markets + pre-match prices (T-24h/T-4h candlesticks), labeled by result. <span class="out">Split by match — no leakage.</span></span></li>
+        <li><span class="k">2</span><span><b>Trends</b> — calibration by price bucket, momentum, category &amp; liquidity edges → plain-English rules.</span></li>
+        <li><span class="k">3</span><span><b>Research loop</b> — try rule injection / retrain on settled-outcome reward; score each on the held-out test set.</span></li>
+        <li><span class="k">4</span><span><b>Keep iff better</b> — a change ships only when the target metric beats the champion. <span class="out">Audit: research_log.json</span></span></li>
+      </ul>
+    </div>
+    <div class="loop-card online">
+      <div class="head">
+        <h3>Online — learn from our own bets</h3>
+        <p>Slow but grounded in what the agent actually did.</p>
+      </div>
+      <ul class="steps">
+        <li><span class="k">1</span><span><b>Bet</b> — the pipeline above places a real demo bet.</span></li>
+        <li><span class="k">2</span><span><b>Settle</b> — browser reads the portfolio; wins/losses land in SQLite.</span></li>
+        <li><span class="k">3</span><span><b>Reflect</b> — Holo mines the outcomes for lessons; strategy rules update.</span></li>
+        <li><span class="k">4</span><span><b>Retrain</b> — resolved bets become GRPO trajectories with realized P&amp;L reward.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- objective -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">03</span><h2>What the model optimizes</h2></div>
+  <div class="objective">
+    <h3>Risk-adjusted profit from calibrated, well-sized bets</h3>
+    <p>Reward = <code>P&amp;L per $ staked</code> + calibration (confident-and-wrong −0.40) + Kelly-style sizing bonus + liquidity bonus.
+    GRPO samples 4 decisions per market state and shifts probability toward those that beat the group average — no critic network.
+    The bar to clear: the market price itself. A predictor only has edge if it beats the <b>implied-price baseline</b> below.</p>
+  </div>
+</section>
+
+<!-- live metrics -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">04</span><h2>Evaluation on real settled markets</h2><span class="tail" id="eval-n"></span></div>
+  <div class="metrics" id="metrics">
+    <div class="metric"><div class="l">Accuracy</div><div class="n" id="m-acc">–</div><div class="s" id="m-acc-s"></div></div>
+    <div class="metric"><div class="l">Precision</div><div class="n" id="m-prec">–</div><div class="s" id="m-prec-s"></div></div>
+    <div class="metric"><div class="l">Recall</div><div class="n" id="m-rec">–</div><div class="s" id="m-rec-s"></div></div>
+    <div class="metric"><div class="l">F1</div><div class="n vio" id="m-f1">–</div><div class="s" id="m-f1-s"></div></div>
+    <div class="metric"><div class="l">ROI</div><div class="n" id="m-roi">–</div><div class="s" id="m-roi-s"></div></div>
+  </div>
+</section>
+
+<!-- research log -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">05</span><h2>Auto research loop</h2><span class="tail">improve on a metric, keep iff better</span></div>
+  <table>
+    <thead><tr><th>Experiment</th><th class="num">Score</th><th class="num">Baseline F1</th><th>Verdict</th></tr></thead>
+    <tbody id="research-body">
+      <tr><td colspan="4">No experiments logged yet — run <span class="mono">python research_loop.py</span>.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- trend rules -->
+<section class="sec">
+  <div class="sec-head"><span class="idx">06</span><h2>Edges found in the data</h2><span class="tail">from analyze_trends.py</span></div>
+  <ul class="rules" id="rules"><li>Loading…</li></ul>
+</section>
+
+</main>
+
+<script>
+const $id = id => document.getElementById(id);
+const pct = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
+
+async function load() {
+  let d;
+  try { d = await (await fetch('/api/learning')).json(); }
+  catch { $id('ds-line').textContent = 'backend offline'; return; }
+
+  const ds = d.dataset || {};
+  $id('ds-line').textContent =
+    `${(ds.train || 0) + (ds.test || 0)} markets · ${ds.train || 0} train / ${ds.test || 0} test · ${ds.events || 0} events`;
+
+  const ev = d.offline_eval || {};
+  const base = ev.implied_baseline, model = ev.grpo_policy;
+  if (base) {
+    $id('eval-n').textContent = `${ev.n_evaluated} held-out markets`;
+    const rows = [
+      ['acc',  m => pct(m.accuracy)],
+      ['prec', m => m.precision == null ? '–' : m.precision.toFixed(2)],
+      ['rec',  m => m.recall == null ? '–' : m.recall.toFixed(2)],
+      ['f1',   m => m.f1 == null ? '–' : m.f1.toFixed(3)],
+      ['roi',  m => m.trading ? (m.trading.roi >= 0 ? '+' : '') + pct(m.trading.roi) : '–'],
+    ];
+    for (const [key, fmt] of rows) {
+      $id('m-' + key).textContent = model && model.accuracy != null ? fmt(model) : fmt(base);
+      $id('m-' + key + '-s').textContent =
+        model && model.accuracy != null ? `model · baseline ${fmt(base)}` : 'implied-price baseline';
+    }
+    if (model && model.trading) {
+      $id('m-roi').className = 'n ' + (model.trading.roi >= 0 ? 'pos' : 'neg');
+    }
+  }
+
+  const log = d.research_log || [];
+  if (log.length) {
+    $id('research-body').innerHTML = log.map(e => `<tr>
+      <td>${e.experiment}</td>
+      <td class="num">${e.score == null ? '–' : e.score}</td>
+      <td class="num">${e.baseline_f1 == null ? '–' : e.baseline_f1}</td>
+      <td><span class="tag ${e.kept ? 'keep' : 'drop'}">${e.kept ? 'kept — new champion' : 'discarded'}</span></td>
+    </tr>`).join('');
+  }
+
+  const rules = d.trend_rules || [];
+  $id('rules').innerHTML = rules.length
+    ? rules.map(r => `<li>${r}</li>`).join('')
+    : '<li>No edges cleared the significance bar yet.</li>';
+}
+load();
+setInterval(load, 20000);
+</script>
+</body>
+</html>
