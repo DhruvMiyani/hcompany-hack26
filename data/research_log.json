@@ -686,5 +686,149 @@
         "roi": 0.5881
       }
     }
+  },
+  {
+    "time": "2026-07-12T22:22:10+00:00",
+    "experiment": "tabular:lr",
+    "metric": "f1",
+    "score": 0.6612,
+    "baseline_f1": 0.6036,
+    "kept": true,
+    "results": {
+      "n_train": 1045,
+      "n": 374,
+      "accuracy": 0.7781,
+      "precision": 0.7043,
+      "recall": 0.6231,
+      "f1": 0.6612,
+      "confusion": {
+        "tp": 81,
+        "tn": 210,
+        "fp": 34,
+        "fn": 49
+      },
+      "trading": {
+        "n_bets": 374,
+        "hit_rate": 0.7781,
+        "pnl": 15.34,
+        "roi": 0.041
+      },
+      "edge": {
+        "margin": 0.05,
+        "n_bets": 131,
+        "skipped": 243,
+        "hit_rate": 0.6947,
+        "pnl": 15.47,
+        "roi": 0.1181
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T22:22:10+00:00",
+    "experiment": "tabular:lr+history",
+    "metric": "f1",
+    "score": 0.6532,
+    "baseline_f1": 0.6036,
+    "kept": false,
+    "results": {
+      "n_train": 1429,
+      "n": 374,
+      "accuracy": 0.7701,
+      "precision": 0.6864,
+      "recall": 0.6231,
+      "f1": 0.6532,
+      "confusion": {
+        "tp": 81,
+        "tn": 207,
+        "fp": 37,
+        "fn": 49
+      },
+      "trading": {
+        "n_bets": 374,
+        "hit_rate": 0.7701,
+        "pnl": 7.79,
+        "roi": 0.0208
+      },
+      "edge": {
+        "margin": 0.05,
+        "n_bets": 97,
+        "skipped": 277,
+        "hit_rate": 0.5876,
+        "pnl": 1.69,
+        "roi": 0.0175
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T22:22:11+00:00",
+    "experiment": "tabular:xgb",
+    "metric": "f1",
+    "score": 0.6498,
+    "baseline_f1": 0.6036,
+    "kept": false,
+    "results": {
+      "n_train": 1045,
+      "n": 374,
+      "accuracy": 0.7781,
+      "precision": 0.7196,
+      "recall": 0.5923,
+      "f1": 0.6498,
+      "confusion": {
+        "tp": 77,
+        "tn": 214,
+        "fp": 30,
+        "fn": 53
+      },
+      "trading": {
+        "n_bets": 374,
+        "hit_rate": 0.7781,
+        "pnl": 22.31,
+        "roi": 0.0596
+      },
+      "edge": {
+        "margin": 0.05,
+        "n_bets": 216,
+        "skipped": 158,
+        "hit_rate": 0.5972,
+        "pnl": 129.64,
+        "roi": 0.6002
+      }
+    }
+  },
+  {
+    "time": "2026-07-12T22:22:11+00:00",
+    "experiment": "tabular:xgb+history",
+    "metric": "f1",
+    "score": 0.65,
+    "baseline_f1": 0.6036,
+    "kept": false,
+    "results": {
+      "n_train": 1429,
+      "n": 374,
+      "accuracy": 0.7754,
+      "precision": 0.7091,
+      "recall": 0.6,
+      "f1": 0.65,
+      "confusion": {
+        "tp": 78,
+        "tn": 212,
+        "fp": 32,
+        "fn": 52
+      },
+      "trading": {
+        "n_bets": 374,
+        "hit_rate": 0.7754,
+        "pnl": 17.8,
+        "roi": 0.0476
+      },
+      "edge": {
+        "margin": 0.05,
+        "n_bets": 208,
+        "skipped": 166,
+        "hit_rate": 0.6106,
+        "pnl": 130.04,
+        "roi": 0.6252
+      }
+    }
   }
 ]

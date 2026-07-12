@@ -421,7 +421,8 @@ def cmd_improve():
     n_train, n_test = build_and_save(max_per_series=400, log=console.print)
 
     import research_loop_tabular
-    champ = research_loop_tabular.run("f1", log=console.print)
+    metric = os.getenv("IMPROVE_METRIC", "f1")   # or roi_edge
+    champ = research_loop_tabular.run(metric, log=console.print)
     if champ:
         console.print(Panel(
             f"[green]New champion: {champ['experiment']}[/green]\n"

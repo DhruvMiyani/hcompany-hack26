@@ -9772,20 +9772,6 @@
   "result": 0
  },
  {
-  "ticker": "KXWC1H-26JUN19TURPAR-TIE",
-  "event": "KXWC1H-26JUN19TURPAR",
-  "category": "first_half_winner",
-  "title": "Will Tie win the 1st Half?",
-  "outcome": "Tie",
-  "close_time": "2026-06-20T03:54:54Z",
-  "yes_price_24h": 0.45,
-  "yes_price_4h": 0.45,
-  "momentum": 0.0,
-  "open_interest": 1204.57,
-  "total_volume": 404529.29,
-  "result": 0
- },
- {
   "ticker": "KXWC1H-26JUN19TURPAR-PAR",
   "event": "KXWC1H-26JUN19TURPAR",
   "category": "first_half_winner",
@@ -9797,48 +9783,6 @@
   "momentum": 0.0,
   "open_interest": 1039.22,
   "total_volume": 439273.37,
-  "result": 1
- },
- {
-  "ticker": "KXWC1H-26JUN20NEDSWE-TIE",
-  "event": "KXWC1H-26JUN20NEDSWE",
-  "category": "first_half_winner",
-  "title": "Will Tie win the 1st Half?",
-  "outcome": "Tie",
-  "close_time": "2026-06-20T17:50:14Z",
-  "yes_price_24h": null,
-  "yes_price_4h": 0.4,
-  "momentum": 0.0,
-  "open_interest": 10376.29,
-  "total_volume": 210599.82,
-  "result": 0
- },
- {
-  "ticker": "KXWC1H-26JUN20NEDSWE-SWE",
-  "event": "KXWC1H-26JUN20NEDSWE",
-  "category": "first_half_winner",
-  "title": "Will Sweden win the 1st Half?",
-  "outcome": "Sweden",
-  "close_time": "2026-06-20T17:50:14Z",
-  "yes_price_24h": null,
-  "yes_price_4h": 0.2,
-  "momentum": 0.0,
-  "open_interest": 16655.39,
-  "total_volume": 91584.28,
-  "result": 0
- },
- {
-  "ticker": "KXWC1H-26JUN20NEDSWE-NED",
-  "event": "KXWC1H-26JUN20NEDSWE",
-  "category": "first_half_winner",
-  "title": "Will Netherlands win the 1st Half?",
-  "outcome": "Netherlands",
-  "close_time": "2026-06-20T17:50:14Z",
-  "yes_price_24h": null,
-  "yes_price_4h": 0.44,
-  "momentum": 0.0,
-  "open_interest": 50316.28,
-  "total_volume": 453199.38,
   "result": 1
  },
  {
@@ -9856,20 +9800,6 @@
   "result": 0
  },
  {
-  "ticker": "KXWC1H-26JUN20GERCIV-GER",
-  "event": "KXWC1H-26JUN20GERCIV",
-  "category": "first_half_winner",
-  "title": "Will Germany win the 1st Half?",
-  "outcome": "Germany",
-  "close_time": "2026-06-20T20:55:00Z",
-  "yes_price_24h": null,
-  "yes_price_4h": 0.5,
-  "momentum": 0.0,
-  "open_interest": 83862.1,
-  "total_volume": 1531876.83,
-  "result": 0
- },
- {
   "ticker": "KXWC1H-26JUN20GERCIV-CIV",
   "event": "KXWC1H-26JUN20GERCIV",
   "category": "first_half_winner",
@@ -9881,20 +9811,6 @@
   "momentum": 0.0,
   "open_interest": 3380.05,
   "total_volume": 637840.92,
-  "result": 1
- },
- {
-  "ticker": "KXWC1H-26JUN20ECUCUW-TIE",
-  "event": "KXWC1H-26JUN20ECUCUW",
-  "category": "first_half_winner",
-  "title": "Will Tie win the 1st Half?",
-  "outcome": "Tie",
-  "close_time": "2026-06-21T00:50:32Z",
-  "yes_price_24h": null,
-  "yes_price_4h": 0.29,
-  "momentum": 0.0,
-  "open_interest": 1685.9,
-  "total_volume": 517617.96,
   "result": 1
  },
  {

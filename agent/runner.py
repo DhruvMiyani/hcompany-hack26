@@ -79,14 +79,15 @@ def run_full_bet_cycle(
         from .tabular_policy import TabularPolicy
         tab = TabularPolicy()
         tab_decision = tab.decide(markets, max_amount)
+        tag = "XGB" if "xgb" in tab.name else "LR"
         if tab_decision:
             print(
-                f"  [XGB] → {tab_decision.direction} | {tab_decision.ticker} "
+                f"  [{tag}] → {tab_decision.direction} | {tab_decision.ticker} "
                 f"| ${tab_decision.amount:.2f} "
                 f"| conf={tab_decision.confidence:.0%}",
                 file=sys.stderr,
             )
-            print(f"  [XGB] {tab_decision.reasoning}", file=sys.stderr)
+            print(f"  [{tag}] {tab_decision.reasoning}", file=sys.stderr)
         else:
             print(f"  [{tab.name}] no market clears the edge margin — "
                   "falling back to GRPO/Holo", file=sys.stderr)

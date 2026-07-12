@@ -10,3 +10,61 @@
   KXWCBTTS: 100 settled markets
   KXWCBTTS: 100 examples with pre-match prices
   KXWCTOTAL: 400 settled markets
+  KXWCTOTAL: 342 examples with pre-match prices
+  KXWCADVANCE: 56 settled markets
+  KXWCADVANCE: 56 examples with pre-match prices
+  KXWC1H: 300 settled markets
+  KXWC1H: 292 examples with pre-match prices
+  KXWCSPREAD: 400 settled markets
+  KXWCSPREAD: 329 examples with pre-match prices
+
+Dataset: 1045 train / 374 test (466 events)
+test: 374 real 2026 markets | baseline F1 0.6036 ROI +0.05%
+
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: divide by zero encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: overflow encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: invalid value encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: divide by zero encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: overflow encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: invalid value encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:78: RuntimeWarning: divide by zero encountered in matmul
+  return self._sigmoid(X @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:78: RuntimeWarning: overflow encountered in matmul
+  return self._sigmoid(X @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:78: RuntimeWarning: invalid value encountered in matmul
+  return self._sigmoid(X @ self.w + self.b)
+tabular:lr             acc 77.81% | F1 0.6612 | ROI +4.10% | edge(0.05) 131 bets
+ROI +11.81%   <- champion
+tabular:lr+history     acc 77.01% | F1 0.6532 | ROI +2.08% | edge(0.05) 97 bets 
+ROI +1.75%
+tabular:xgb            acc 77.81% | F1 0.6498 | ROI +5.96% | edge(0.05) 216 bets
+ROI +60.02%
+tabular:xgb+history    acc 77.54% | F1 0.65 | ROI +4.76% | edge(0.05) 208 bets 
+ROI +62.52%
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: divide by zero encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: overflow encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:69: RuntimeWarning: invalid value encountered in matmul
+  p = self._sigmoid(Xs @ self.w + self.b)
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: divide by zero encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: overflow encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+/Users/dhruvmiyani/Documents/dhruv-projects/agent/simple_model.py:70: RuntimeWarning: invalid value encountered in matmul
+  grad_w = Xs.T @ (p - y) / n
+
+champion: tabular:lr (f1=0.6612) → data/tabular_champion.json
+╭────────────────────────────── Improve — Result ──────────────────────────────╮
+│ New champion: tabular:lr                                                     │
+│   F1 0.6612 vs market baseline 0.6036                                        │
+│   Trained on 1045 settled markets (374 held out)                             │
+│                                                                              │
+│   The next 'Bet for me' uses this model — no deploy step.                    │
+╰──────────────────────────────────────────────────────────────────────────────╯

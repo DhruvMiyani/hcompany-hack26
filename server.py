@@ -169,9 +169,10 @@ def bet_watch() -> dict:
     if m:
         out["phase"] = "executing"
         out["watch_url"] = f"https://platform.eu.hcompany.ai/agent-view/{m.group(1)}"
-    m = re.search(r"\[(GRPO|XGB)\] → (\w+) \| (\S+) \| \$([\d.]+) \| conf=(\d+)%", text)
+    m = re.search(r"\[(GRPO|XGB|LR)\] → (\w+) \| (\S+) \| \$([\d.]+) \| conf=(\d+)%", text)
     if m:
-        out["engine"] = {"XGB": "XGBoost", "GRPO": "GRPO policy"}[m.group(1)]
+        out["engine"] = {"XGB": "XGBoost", "LR": "Logistic Regression",
+                         "GRPO": "GRPO policy"}[m.group(1)]
         out["decision"] = {"direction": m.group(2), "ticker": m.group(3),
                            "amount": float(m.group(4)), "confidence": int(m.group(5))}
     if "placed successfully" in text.lower():
